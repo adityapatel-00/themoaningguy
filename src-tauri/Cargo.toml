@@ -1,0 +1,16 @@
+[package]
+name = "the-moaning-guy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+cpal = "0.15"
+rodio = "0.20"
+rand = "0.8"
+tauri-plugin-dialog = "2"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Moaning Guy - Settings</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      padding: 24px;
+      user-select: none;
+      overflow-y: auto;
+    }
+
+    .header { text-align: center; margin-bottom: 28px; }
+    .header .logo { width: 120px; height: 120px; margin-bottom: 8px; object-fit: contain; }
+    .header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+    .header p { font-size: 12px; color: #888; margin-top: 4px; }
+
+    .section { margin-bottom: 22px; }
+    .section-title {
+      font-size: 11px; text-transform: uppercase;
+      letter-spacing: 1.5px; color: #666; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── Toggle ──────────────────────────────────── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #1a1a2e; padding: 14px 16px;
+      border-radius: 10px; margin-bottom: 12px;
+    }
+    .toggle-row label { font-size: 14px; }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute; inset: 0; background: #333;
+      border-radius: 12px; cursor: pointer; transition: background 0.2s;
+    }
+    .toggle .slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px;
+      left: 3px; top: 3px; background: #fff; border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .slider { background: #7c4dff; }
+    .toggle input:checked + .slider::before { transform: translateX(20px); }
+
+    /* ── Sliders ─────────────────────────────────── */
+    .slider-group {
+      background: #1a1a2e; padding: 16px;
+      border-radius: 10px; margin-bottom: 12px;
+    }
+    .slider-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .slider-header label { font-size: 14px; }
+    .slider-header .value { font-size: 13px; color: #7c4dff; font-weight: 600; }
+    .slider-hints {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: #555; margin-top: 6px;
+    }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+      background: #333; border-radius: 3px; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 18px; height: 18px;
+      background: #7c4dff; border-radius: 50%; cursor: pointer;
+    }
+
+    /* ── Bundles ──────────────────────────────────── */
+    .bundle-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .bundle-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #1a1a2e; padding: 12px 14px; border-radius: 10px;
+      cursor: pointer; border: 2px solid transparent; transition: all 0.2s;
+    }
+    .bundle-item:hover { background: #222240; }
+    .bundle-item.active { border-color: #7c4dff; background: #1e1e3a; }
+    .bundle-item.expanded { border-radius: 10px 10px 0 0; }
+
+    .bundle-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .bundle-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bundle-count { font-size: 11px; color: #666; flex-shrink: 0; }
+
+    .bundle-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .bundle-actions button {
+      background: none; border: none; color: #555; cursor: pointer;
+      font-size: 14px; padding: 4px 6px; border-radius: 4px; transition: all 0.15s;
+    }
+    .bundle-actions button:hover { background: #2a2a40; color: #e0e0e0; }
+    .bundle-actions .delete-btn:hover { background: #3a1a1a; color: #ef5350; }
+
+    /* ── Sounds Panel (expandable under bundle) ──── */
+    .sounds-panel {
+      background: #151528; border: 2px solid #7c4dff;
+      border-top: 1px solid #2a2a40;
+      border-radius: 0 0 10px 10px; padding: 10px;
+      margin-top: -2px; margin-bottom: 4px;
+    }
+
+    .sound-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 10px; border-radius: 6px; font-size: 13px;
+      transition: background 0.15s;
+    }
+    .sound-item:hover { background: #1a1a30; }
+    .sound-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sound-remove {
+      background: none; border: none; color: #555; cursor: pointer;
+      font-size: 15px; padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
+    }
+    .sound-remove:hover { background: #3a1a1a; color: #ef5350; }
+
+    .sounds-empty { text-align: center; padding: 14px; color: #444; font-size: 12px; }
+
+    .add-sounds-btn {
+      width: 100%; padding: 8px; margin-top: 6px;
+      border: 2px dashed #2a2a40; border-radius: 8px;
+      background: transparent; color: #666; font-size: 12px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .add-sounds-btn:hover { border-color: #7c4dff; color: #7c4dff; }
+
+    /* ── Create Bundle ───────────────────────────── */
+    .create-bundle-row {
+      display: flex; gap: 8px; margin-top: 10px;
+    }
+    .create-bundle-row input {
+      flex: 1; padding: 10px 12px; background: #1a1a2e;
+      border: 1px solid #333; border-radius: 8px;
+      color: #e0e0e0; font-size: 13px; outline: none;
+    }
+    .create-bundle-row input:focus { border-color: #7c4dff; }
+    .create-bundle-row input::placeholder { color: #444; }
+
+    .btn-create {
+      padding: 10px 16px; background: #7c4dff; color: #fff;
+      border: none; border-radius: 8px; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-create:hover { opacity: 0.85; }
+
+    /* ── Buttons ──────────────────────────────────── */
+    .button-row { display: flex; gap: 10px; margin-top: 24px; }
+    .btn {
+      flex: 1; padding: 12px; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary { background: linear-gradient(135deg, #5c6bc0, #7c4dff); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-test { background: #2a1a2e; color: #e0a0ff; border: 1px solid #7c4dff44; }
+    .btn-test:hover { background: #3a2a3e; }
+
+    /* ── Toast ────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #2e7d32; color: #fff; padding: 10px 24px;
+      border-radius: 8px; font-size: 13px; transition: transform 0.3s ease;
+      pointer-events: none; z-index: 100;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Rename Dialog ───────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 50;
+      justify-content: center; align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #1a1a2e; padding: 24px; border-radius: 12px;
+      width: 320px; border: 1px solid #333;
+    }
+    .modal h3 { font-size: 16px; margin-bottom: 14px; color: #fff; }
+    .modal input {
+      width: 100%; padding: 10px 12px; background: #0f0f1a;
+      border: 1px solid #333; border-radius: 8px;
+      color: #e0e0e0; font-size: 14px; outline: none; margin-bottom: 14px;
+    }
+    .modal input:focus { border-color: #7c4dff; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-actions button {
+      padding: 8px 16px; border: none; border-radius: 6px;
+      font-size: 13px; cursor: pointer;
+    }
+    .modal-cancel { background: #333; color: #e0e0e0; }
+    .modal-confirm { background: #7c4dff; color: #fff; }
+
+    /* ── Scrollbar ────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="assets/logo.png" alt="The Moaning Guy" class="logo" />
+    <h1>The Moaning Guy</h1>
+    <p>Slap detection settings</p>
+  </div>
+
+  <!-- Enabled -->
+  <div class="section">
+    <div class="toggle-row">
+      <label>Detection Enabled</label>
+      <div class="toggle">
+        <input type="checkbox" id="enabledToggle" checked />
+        <span class="slider"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detection -->
+  <div class="section">
+    <div class="section-title">Detection</div>
+    <div class="slider-group">
+      <div class="slider-header">
+        <label>Sensitivity</label>
+        <span class="value" id="sensitivityValue">0.15</span>
+      </div>
+      <input type="range" id="sensitivity" min="0.01" max="0.5" step="0.01" value="0.15" />
+      <div class="slider-hints">
+        <span>Earthquake detector</span>
+        <span>Hair trigger</span>
+      </div>
+    </div>
+    <div class="slider-group">
+      <div class="slider-header">
+        <label>Cooldown</label>
+        <span class="value" id="cooldownValue">2.0s</span>
+      </div>
+      <input type="range" id="cooldown" min="200" max="10000" step="100" value="2000" />
+      <div class="slider-hints">
+        <span>Rapid-fire</span>
+        <span>Dramatic pauses</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Volume -->
+  <div class="section">
+    <div class="section-title">Playback</div>
+    <div class="slider-group">
+      <div class="slider-header">
+        <label>Volume</label>
+        <span class="value" id="volumeValue">80%</span>
+      </div>
+      <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8" />
+      <div class="slider-hints">
+        <span>Whisper</span>
+        <span>Full send</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sound Bundles -->
+  <div class="section">
+    <div class="section-title">
+      <span>Sound Bundles</span>
+      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">click to expand</span>
+    </div>
+    <div class="bundle-list" id="bundleList"></div>
+    <div class="create-bundle-row">
+      <input type="text" id="newBundleName" placeholder="New bundle name..." />
+      <button class="btn-create" id="createBundleBtn">Create</button>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="button-row">
+    <button class="btn btn-test" id="testBtn">Test</button>
+    <button class="btn btn-primary" id="saveBtn">Save</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Rename Modal -->
+  <div class="modal-overlay" id="renameModal">
+    <div class="modal">
+      <h3>Rename Bundle</h3>
+      <input type="text" id="renameInput" placeholder="New name..." />
+      <div class="modal-actions">
+        <button class="modal-cancel" id="renameCancel">Cancel</button>
+        <button class="modal-confirm" id="renameConfirm">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+    const { getCurrentWindow } = window.__TAURI__.window;
+    const { open: openDialog } = window.__TAURI__.dialog;
+
+    // Elements
+    const enabledToggle = document.getElementById('enabledToggle');
+    const sensitivitySlider = document.getElementById('sensitivity');
+    const sensitivityValue = document.getElementById('sensitivityValue');
+    const cooldownSlider = document.getElementById('cooldown');
+    const cooldownValue = document.getElementById('cooldownValue');
+    const volumeSlider = document.getElementById('volume');
+    const volumeValue = document.getElementById('volumeValue');
+    const bundleList = document.getElementById('bundleList');
+    const newBundleName = document.getElementById('newBundleName');
+    const createBundleBtn = document.getElementById('createBundleBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const testBtn = document.getElementById('testBtn');
+    const toast = document.getElementById('toast');
+    const renameModal = document.getElementById('renameModal');
+    const renameInput = document.getElementById('renameInput');
+    const renameCancel = document.getElementById('renameCancel');
+    const renameConfirm = document.getElementById('renameConfirm');
+
+    let selectedBundle = null; // loaded from settings
+    let expandedBundle = null;
+    let renamingBundle = null;
+
+    // ── Sensitivity (inverted slider) ──────────────
+    const SENS_MIN = 0.01, SENS_MAX = 0.5;
+    const thresholdFromSlider = v => SENS_MAX + SENS_MIN - parseFloat(v);
+    const sliderFromThreshold = t => SENS_MAX + SENS_MIN - t;
+
+    sensitivitySlider.addEventListener('input', () => {
+      sensitivityValue.textContent = thresholdFromSlider(sensitivitySlider.value).toFixed(2);
+    });
+    cooldownSlider.addEventListener('input', () => {
+      cooldownValue.textContent = (cooldownSlider.value / 1000).toFixed(1) + 's';
+    });
+    volumeSlider.addEventListener('input', () => {
+      volumeValue.textContent = Math.round(volumeSlider.value * 100) + '%';
+    });
+
+    // ── Bundle List ─────────────────────────────────
+    async function loadBundles() {
+      const bundles = await invoke('list_bundles');
+      bundleList.innerHTML = '';
+
+      for (const b of bundles) {
+        const isActive = b.name === selectedBundle;
+        const isExpanded = b.name === expandedBundle;
+
+        // Bundle row
+        const item = document.createElement('div');
+        item.className = 'bundle-item' + (isActive ? ' active' : '') + (isExpanded ? ' expanded' : '');
+        item.innerHTML = `
+          <div class="bundle-left">
+            <span class="bundle-name">${b.name}</span>
+            <span class="bundle-count">${b.count} sound${b.count !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="bundle-actions">
+            <button class="rename-btn" title="Rename">&#9998;</button>
+            <button class="delete-btn" title="Delete">&times;</button>
+          </div>
+        `;
+
+        // Click to select + toggle expand
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.bundle-actions')) return;
+          selectedBundle = b.name;
+          expandedBundle = expandedBundle === b.name ? null : b.name;
+          loadBundles();
+        });
+
+        // Rename
+        item.querySelector('.rename-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          renamingBundle = b.name;
+          renameInput.value = b.name;
+          renameModal.classList.add('show');
+          renameInput.focus();
+        });
+
+        // Delete
+        item.querySelector('.delete-btn').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (bundles.length <= 1) {
+            showToast('Cannot delete the last bundle');
+            return;
+          }
+          await invoke('delete_bundle', { name: b.name });
+          if (selectedBundle === b.name) {
+            selectedBundle = bundles.find(x => x.name !== b.name)?.name || '';
+          }
+          if (expandedBundle === b.name) expandedBundle = null;
+          loadBundles();
+          showToast(`Deleted "${b.name}"`);
+        });
+
+        bundleList.appendChild(item);
+
+        // Expanded sounds panel
+        if (isExpanded) {
+          const panel = document.createElement('div');
+          panel.className = 'sounds-panel';
+          const sounds = await invoke('list_bundle_sounds', { bundle: b.name });
+
+          if (sounds.length === 0) {
+            panel.innerHTML = '<div class="sounds-empty">No sounds yet</div>';
+          } else {
+            sounds.forEach(s => {
+              const si = document.createElement('div');
+              si.className = 'sound-item';
+              si.innerHTML = `
+                <span class="sound-name">${s.name}</span>
+                <button class="sound-remove" title="Remove">&times;</button>
+              `;
+              si.querySelector('.sound-remove').addEventListener('click', async () => {
+                await invoke('remove_sound', { bundle: b.name, filename: s.name });
+                loadBundles();
+              });
+              panel.appendChild(si);
+            });
+          }
+
+          // Add sounds button
+          const addBtn = document.createElement('button');
+          addBtn.className = 'add-sounds-btn';
+          addBtn.textContent = '+ Add Sound Files';
+          addBtn.addEventListener('click', async () => {
+            const selected = await openDialog({
+              multiple: true,
+              filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'ogg', 'flac'] }],
+            });
+            if (!selected) return;
+            const paths = Array.isArray(selected) ? selected : [selected];
+            if (paths.length === 0) return;
+            await invoke('import_sounds', { bundle: b.name, paths });
+            loadBundles();
+            showToast(`Added ${paths.length} file(s)`);
+          });
+          panel.appendChild(addBtn);
+
+          bundleList.appendChild(panel);
+        }
+      }
+    }
+
+    // ── Create Bundle ───────────────────────────────
+    function isValidBundleName(name) {
+      if (!name || name.length > 50) return false;
+      return /^[a-zA-Z0-9 _-]+$/.test(name);
+    }
+
+    createBundleBtn.addEventListener('click', async () => {
+      const name = newBundleName.value.trim();
+      if (!name) return;
+      if (!isValidBundleName(name)) {
+        showToast('Use only letters, numbers, spaces, hyphens, underscores');
+        return;
+      }
+      try {
+        await invoke('create_bundle', { name });
+        newBundleName.value = '';
+        selectedBundle = name;
+        expandedBundle = name;
+        loadBundles();
+        showToast(`Created "${name}"`);
+      } catch (e) {
+        showToast(e);
+      }
+    });
+
+    newBundleName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') createBundleBtn.click();
+    });
+
+    // ── Rename Modal ────────────────────────────────
+    renameCancel.addEventListener('click', () => {
+      renameModal.classList.remove('show');
+      renamingBundle = null;
+    });
+
+    renameConfirm.addEventListener('click', async () => {
+      const newName = renameInput.value.trim();
+      if (!newName || !renamingBundle) return;
+      if (!isValidBundleName(newName)) {
+        showToast('Use only letters, numbers, spaces, hyphens, underscores');
+        return;
+      }
+      try {
+        await invoke('rename_bundle', { oldName: renamingBundle, newName });
+        if (selectedBundle === renamingBundle) selectedBundle = newName;
+        if (expandedBundle === renamingBundle) expandedBundle = newName;
+        renameModal.classList.remove('show');
+        renamingBundle = null;
+        loadBundles();
+        showToast(`Renamed to "${newName}"`);
+      } catch (e) {
+        showToast(e);
+      }
+    });
+
+    renameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') renameConfirm.click();
+      if (e.key === 'Escape') renameCancel.click();
+    });
+
+    // ── Enabled Toggle (instant, no save needed) ────
+    // Use the slider span as click target to avoid checkbox quirks
+    enabledToggle.parentElement.querySelector('.slider').addEventListener('click', async () => {
+      try {
+        const enabled = await invoke('toggle_enabled');
+        enabledToggle.checked = enabled;
+      } catch (err) {
+        console.error('toggle failed', err);
+      }
+    });
+    // Prevent checkbox from toggling on its own
+    enabledToggle.addEventListener('click', (e) => e.preventDefault());
+
+    // ── Load Settings ───────────────────────────────
+    async function loadSettings() {
+      const s = await invoke('get_settings');
+      enabledToggle.checked = s.enabled;
+      sensitivitySlider.value = sliderFromThreshold(s.sensitivity);
+      sensitivityValue.textContent = s.sensitivity.toFixed(2);
+      cooldownSlider.value = s.cooldownMs;
+      cooldownValue.textContent = (s.cooldownMs / 1000).toFixed(1) + 's';
+      volumeSlider.value = s.volume;
+      volumeValue.textContent = Math.round(s.volume * 100) + '%';
+      selectedBundle = s.bundle;
+    }
+
+    // ── Save ────────────────────────────────────────
+    saveBtn.addEventListener('click', async () => {
+      await invoke('save_settings', {
+        newSettings: {
+          sensitivity: thresholdFromSlider(sensitivitySlider.value),
+          cooldownMs: parseInt(cooldownSlider.value),
+          volume: parseFloat(volumeSlider.value),
+          enabled: enabledToggle.checked,
+          bundle: selectedBundle,
+        },
+      });
+      showToast('Settings saved!');
+    });
+
+    testBtn.addEventListener('click', () => {
+      invoke('test_sound', {
+        volume: parseFloat(volumeSlider.value),
+        bundle: selectedBundle,
+      });
+    });
+
+    // ── Toast ───────────────────────────────────────
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // ── Close → Hide ────────────────────────────────
+    getCurrentWindow().onCloseRequested(async (e) => {
+      e.preventDefault();
+      await getCurrentWindow().hide();
+    });
+
+    // ── Init ────────────────────────────────────────
+    loadSettings().then(() => loadBundles());
+  </script>
+</body>
+</html>

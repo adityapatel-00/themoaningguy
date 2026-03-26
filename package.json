@@ -1,0 +1,17 @@
+{
+  "name": "the-moaning-guy",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Plays moaning sounds when you slap your laptop",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

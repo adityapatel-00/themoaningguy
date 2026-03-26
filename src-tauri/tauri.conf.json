@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-config-schema/schema.json",
+  "productName": "The Moaning Guy",
+  "version": "0.1.0",
+  "identifier": "com.themoaningguy.desktop",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "settings",
+        "title": "The Moaning Guy - Settings",
+        "url": "settings.html",
+        "width": 450,
+        "height": 680,
+        "resizable": true,
+        "minimizable": false,
+        "maximizable": false,
+        "visible": false,
+        "center": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ]
+  }
+}
