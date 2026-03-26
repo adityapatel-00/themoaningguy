@@ -134,6 +134,13 @@ fn remove_sound(
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // Another instance was launched — show settings window
+            if let Some(win) = app.get_webview_window("settings") {
+                win.show().ok();
+                win.set_focus().ok();
+            }
+        }))
         .setup(|app| {
             let settings = Settings::load(&app.handle());
 
@@ -183,6 +190,15 @@ fn main() {
                 .menu(&menu)
                 .tooltip("The Moaning Guy")
                 .icon(app.default_window_icon().unwrap().clone())
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(win) = app.get_webview_window("settings") {
+                            win.show().ok();
+                            win.set_focus().ok();
+                        }
+                    }
+                })
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "toggle" => {
                         let state: tauri::State<'_, AppState> = app.state();

@@ -135,6 +135,14 @@ The app ships without sounds. You bring your own:
 
 Sounds are stored in your app data directory and persist across updates.
 
+## Platform Notes
+
+| Platform | Tray Icon | Notes |
+|----------|-----------|-------|
+| **Windows** | Works out of the box | Appears in system tray |
+| **macOS** | Works out of the box | Appears in menu bar. You may need to grant **Microphone** permission in System Settings → Privacy & Security |
+| **Linux** | Usually works | If the tray icon doesn't appear on GNOME, install the [AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/) |
+
 ## License
 
 MIT

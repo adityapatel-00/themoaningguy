@@ -11,6 +11,7 @@ cpal = "0.15"
 rodio = "0.20"
 rand = "0.8"
 tauri-plugin-dialog = "2"
+tauri-plugin-single-instance = "2"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
