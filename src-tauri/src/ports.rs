@@ -18,7 +18,7 @@ use std::process::Command;
 use battery::{Manager, State as BatteryState};
 #[cfg(all(not(windows), not(target_os = "macos")))]
 use display_info::DisplayInfo;
-#[cfg(all(not(windows), not(target_os = "macos")))]
+#[cfg(not(windows))]
 use rusb::UsbContext;
 #[cfg(all(not(windows), not(target_os = "macos")))]
 use sysinfo::Networks;
