@@ -30,12 +30,11 @@ use udev::MonitorBuilder;
 use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "macos")]
 use objc2_core_foundation::{
-    CFRunLoopAddSource, CFRunLoopGetCurrent, CFRunLoopRunInMode, kCFRunLoopDefaultMode,
+    CFRunLoop, kCFRunLoopDefaultMode,
 };
 #[cfg(target_os = "macos")]
 use objc2_io_kit::{
-    io_iterator_t, IOIteratorNext, IONotificationPortCreate, IONotificationPortDestroy,
-    IONotificationPortGetRunLoopSource, IONotificationPortRef, IOObjectRelease,
+    io_iterator_t, IONotificationPort, IONotificationPortRef, IOIteratorNext, IOObjectRelease,
     IOServiceAddMatchingNotification, IOServiceMatching, kIOMatchedNotification,
     kIOTerminatedNotification,
 };
@@ -825,21 +824,19 @@ fn spawn_macos_monitor_loop(
     let event_tx = Box::new(event_tx);
     let event_tx_ptr = Box::into_raw(event_tx) as *mut c_void;
 
-    let notify_port = unsafe { IONotificationPortCreate(0) };
-    let run_loop_source = unsafe { IONotificationPortGetRunLoopSource(notify_port) };
+    let notify_port = unsafe { IONotificationPort::create(0) };
+    let run_loop_source = unsafe { IONotificationPort::run_loop_source(notify_port) };
 
-    let Some(run_loop) = (unsafe { CFRunLoopGetCurrent() }) else {
+    let Some(run_loop) = CFRunLoop::current() else {
         unsafe {
             drop(Box::from_raw(event_tx_ptr as *mut mpsc::Sender<()>));
-            IONotificationPortDestroy(notify_port);
+            IONotificationPort::destroy(notify_port);
         }
         return;
     };
 
     if let Some(source) = run_loop_source.as_ref() {
-        unsafe {
-            CFRunLoopAddSource(run_loop.as_ref(), Some(source.as_ref()), kCFRunLoopDefaultMode);
-        }
+        run_loop.add_source(Some(source.as_ref()), kCFRunLoopDefaultMode);
     }
 
     let mut watchers = Vec::new();
@@ -871,9 +868,7 @@ fn spawn_macos_monitor_loop(
 
         while event_rx.try_recv().is_ok() {}
 
-        unsafe {
-            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.5, true);
-        }
+        CFRunLoop::run_in_mode(kCFRunLoopDefaultMode, 0.5, true);
 
         if event_rx.try_recv().is_ok() {
             let current = poll_port_snapshot();
@@ -888,7 +883,7 @@ fn spawn_macos_monitor_loop(
             IOObjectRelease(watcher);
         }
         drop(Box::from_raw(event_tx_ptr as *mut mpsc::Sender<()>));
-        IONotificationPortDestroy(notify_port);
+        IONotificationPort::destroy(notify_port);
     }
 }
 
@@ -920,7 +915,7 @@ unsafe fn register_macos_matching_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        kIOMatchedNotification.as_ptr() as *mut i8,
+        std::mem::transmute(kIOMatchedNotification),
         Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
@@ -945,7 +940,7 @@ unsafe fn register_macos_terminated_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        kIOTerminatedNotification.as_ptr() as *mut i8,
+        std::mem::transmute(kIOTerminatedNotification),
         Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
@@ -1013,14 +1008,13 @@ fn poll_ethernet_macos() -> Option<bool> {
     let output = run_macos_command("/usr/sbin/networksetup", &["-listallhardwareports"])?;
     let mut active_devices = Vec::new();
     let mut current_port = String::new();
-    let mut current_device = String::new();
 
     for line in output.lines() {
         let line = line.trim();
         if let Some(rest) = line.strip_prefix("Hardware Port: ") {
             current_port = rest.trim().to_lowercase();
         } else if let Some(rest) = line.strip_prefix("Device: ") {
-            current_device = rest.trim().to_string();
+            let current_device = rest.trim().to_string();
 
             if current_port.contains("ethernet")
                 || current_port.contains("lan")

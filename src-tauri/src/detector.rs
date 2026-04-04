@@ -138,6 +138,26 @@ pub fn accelerometer_available() -> bool {
     discover_sensor_device().is_some()
 }
 
+fn build_accelerometer_detector(
+    threshold: f32,
+    cooldown_ms: u64,
+    on_slap: Arc<dyn Fn(f32) + Send + Sync>,
+) -> Result<ActiveDetector, String> {
+    if !accelerometer_available() {
+        return Err("No compatible accelerometer or motion sensor found".to_string());
+    }
+
+    let (stop_tx, stop_rx) = mpsc::channel::<()>();
+
+    let join = thread::spawn(move || {
+        if let Err(err) = run_accelerometer_loop(threshold, cooldown_ms, stop_rx, on_slap) {
+            eprintln!("Accelerometer detector stopped: {}", err);
+        }
+    });
+
+    Ok(ActiveDetector::Accelerometer { stop_tx, join })
+}
+
 fn stop_runtime(runtime: &mut Option<ActiveDetector>) {
     if let Some(active) = runtime.take() {
         match active {
@@ -215,26 +235,6 @@ fn build_microphone_detector(
         .map_err(|e| format!("Failed to play: {}", e))?;
 
     Ok(ActiveDetector::Microphone { stream, running })
-}
-
-fn build_accelerometer_detector(
-    threshold: f32,
-    cooldown_ms: u64,
-    on_slap: Arc<dyn Fn(f32) + Send + Sync>,
-) -> Result<ActiveDetector, String> {
-    if !accelerometer_available() {
-        return Err("No compatible accelerometer or motion sensor found".to_string());
-    }
-
-    let (stop_tx, stop_rx) = mpsc::channel::<()>();
-
-    let join = thread::spawn(move || {
-        if let Err(err) = run_accelerometer_loop(threshold, cooldown_ms, stop_rx, on_slap) {
-            eprintln!("Accelerometer detector stopped: {}", err);
-        }
-    });
-
-    Ok(ActiveDetector::Accelerometer { stop_tx, join })
 }
 
 fn run_accelerometer_loop(
