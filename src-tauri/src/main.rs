@@ -5,11 +5,12 @@ mod detector;
 mod player;
 mod settings;
 
-use detector::DetectorHandle;
+use detector::{accelerometer_available, DetectorHandle};
 use player::{BundleInfo, PlayerHandle, SoundInfo};
 use settings::Settings;
 
 use std::sync::{Arc, Mutex};
+use serde::Serialize;
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
     tray::TrayIconBuilder,
@@ -20,6 +21,12 @@ struct AppState {
     settings: Arc<Mutex<Settings>>,
     detector: DetectorHandle,
     player: Arc<PlayerHandle>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DetectorCapabilities {
+    accelerometer_available: bool,
 }
 
 // ── Settings Commands ───────────────────────────────────────────────
@@ -43,7 +50,9 @@ fn save_settings(
     drop(s);
 
     if sc.enabled {
-        state.detector.start(sc.sensitivity, sc.cooldown_ms);
+        state
+            .detector
+            .start(sc.detection_mode, sc.sensitivity, sc.cooldown_ms);
     } else {
         state.detector.stop();
     }
@@ -64,7 +73,9 @@ fn toggle_enabled(
     drop(s);
 
     if sc.enabled {
-        state.detector.start(sc.sensitivity, sc.cooldown_ms);
+        state
+            .detector
+            .start(sc.detection_mode, sc.sensitivity, sc.cooldown_ms);
     } else {
         state.detector.stop();
     }
@@ -76,6 +87,13 @@ fn toggle_enabled(
 #[tauri::command]
 fn test_sound(state: tauri::State<'_, AppState>, volume: f32, bundle: String) {
     state.player.play(&bundle, volume, 1.0);
+}
+
+#[tauri::command]
+fn get_detector_capabilities() -> DetectorCapabilities {
+    DetectorCapabilities {
+        accelerometer_available: accelerometer_available(),
+    }
 }
 
 // ── Bundle Commands ─────────────────────────────────────────────────
@@ -134,6 +152,7 @@ fn remove_sound(
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // Another instance was launched — show settings window
             if let Some(win) = app.get_webview_window("settings") {
@@ -161,7 +180,11 @@ fn main() {
             });
 
             if settings.enabled {
-                detector.start(settings.sensitivity, settings.cooldown_ms);
+                detector.start(
+                    settings.detection_mode,
+                    settings.sensitivity,
+                    settings.cooldown_ms,
+                );
             }
 
             app.manage(AppState {
@@ -212,7 +235,9 @@ fn main() {
                             .ok();
 
                         if enabled {
-                            state.detector.start(s.sensitivity, s.cooldown_ms);
+                            state
+                                .detector
+                                .start(s.detection_mode, s.sensitivity, s.cooldown_ms);
                         } else {
                             state.detector.stop();
                         }
@@ -243,6 +268,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_settings,
+            get_detector_capabilities,
             save_settings,
             toggle_enabled,
             test_sound,

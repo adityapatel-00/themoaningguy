@@ -3,14 +3,19 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::Manager as _;
 
+use crate::detector::DetectionMode;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub sensitivity: f32,
     pub cooldown_ms: u64,
     pub volume: f32,
     pub enabled: bool,
+    pub detection_mode: DetectionMode,
     pub bundle: String,
+    pub hide_support_prompt: bool,
 }
 
 impl Default for Settings {
@@ -20,7 +25,9 @@ impl Default for Settings {
             cooldown_ms: 2000,
             volume: 0.8,
             enabled: true,
+            detection_mode: DetectionMode::Microphone,
             bundle: "default".to_string(),
+            hide_support_prompt: false,
         }
     }
 }
@@ -54,5 +61,12 @@ impl Settings {
         self.sensitivity = self.sensitivity.clamp(0.01, 1.0);
         self.cooldown_ms = self.cooldown_ms.clamp(200, 10000);
         self.volume = self.volume.clamp(0.0, 1.0);
+
+        if !matches!(
+            self.detection_mode,
+            DetectionMode::Microphone | DetectionMode::Accelerometer
+        ) {
+            self.detection_mode = DetectionMode::Microphone;
+        }
     }
 }

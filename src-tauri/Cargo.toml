@@ -10,7 +10,9 @@ serde_json = "1"
 cpal = "0.15"
 rodio = "0.20"
 rand = "0.8"
+hidapi = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
 tauri-plugin-single-instance = "2"
 
 [build-dependencies]

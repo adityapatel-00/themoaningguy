@@ -23,9 +23,9 @@
 
 ## How It Works
 
-SlapMac uses the MacBook's built-in accelerometer to detect slaps. Most Windows/Linux laptops don't have one — so **The Moaning Guy uses your microphone** instead.
+When available, **The Moaning Guy can use a built-in accelerometer / motion sensor** for more precise slap detection. On devices without sensor support, it automatically falls back to the **microphone detector**.
 
-A slap on the laptop chassis produces a sharp, short impulse that's easy to distinguish from normal audio. The app listens to your mic in real-time, detects amplitude spikes above a configurable threshold, and plays a random sound from your selected bundle.
+A slap on the laptop chassis produces a sharp, short impulse that's easy to distinguish from normal audio. The app listens in real-time, detects either motion spikes or microphone amplitude spikes above a configurable threshold, and plays a random sound from your selected bundle.
 
 ```
 Mic Input → Amplitude Analysis → Spike Detection → Sound Playback
@@ -35,6 +35,8 @@ Mic Input → Amplitude Analysis → Spike Detection → Sound Playback
 - **Volume scales with force** — harder slap = louder moan
 - **Shuffle bag** — plays through all sounds before repeating any
 - **No overlap** — new trigger stops the previous sound
+- **Accelerometer mode** — use supported sensor hardware for tighter slap detection
+- **Microphone fallback** — works on devices without a motion sensor
 - **Adjustable sensitivity** — tune it for your environment
 - **Cooldown timer** — prevent rapid-fire triggers
 
@@ -107,7 +109,7 @@ sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchel
 ### Development
 
 ```bash
-git clone https://github.com/AdiYd/themoaningguy.git
+git clone https://github.com/adityapatel-00/themoaningguy.git
 cd themoaningguy
 npm install
 npm run dev
@@ -126,8 +128,11 @@ Produces platform-specific installers in `src-tauri/target/release/bundle/`.
 1. Launch the app — it sits in your **system tray**
 2. Right-click the tray icon → **Settings**
 3. Create a **sound bundle** and import your audio files (wav, mp3, ogg, flac)
-4. Adjust **sensitivity**, **cooldown**, and **volume**
-5. Save — then slap your laptop
+4. Pick **Accelerometer** or **Microphone** mode when available
+5. Adjust **sensitivity**, **cooldown**, and **volume**
+6. Save — then slap your laptop
+
+The settings screen also includes a small support prompt and footer links for GitHub Sponsors, Ko-fi, and starring the repo.
 
 ## Adding Sounds
 

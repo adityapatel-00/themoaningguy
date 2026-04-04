@@ -11,7 +11,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0f0f1a;
       color: #e0e0e0;
-      padding: 24px;
+      padding: 24px 24px 96px;
       user-select: none;
       overflow-y: auto;
     }
@@ -26,6 +26,70 @@
       font-size: 11px; text-transform: uppercase;
       letter-spacing: 1.5px; color: #666; margin-bottom: 12px;
       display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .mode-option {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #1a1a2e;
+      border: 1px solid #2a2a40;
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+    }
+    .mode-option:hover { background: #202038; transform: translateY(-1px); }
+    .mode-option input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .mode-option .mode-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .mode-option .mode-desc {
+      font-size: 12px;
+      line-height: 1.4;
+      color: #8b8ba8;
+    }
+    .mode-option .mode-pill {
+      align-self: flex-start;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: #292948;
+      color: #a7a7d9;
+    }
+    .mode-option.active {
+      border-color: #7c4dff;
+      background: #1e1e3a;
+      box-shadow: 0 0 0 1px #7c4dff44 inset;
+    }
+    .mode-option.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .mode-option.disabled:hover { transform: none; background: #1a1a2e; }
+    .mode-status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #7c4dff;
     }
 
     /* ── Toggle ──────────────────────────────────── */
@@ -192,6 +256,121 @@
     .modal-cancel { background: #333; color: #e0e0e0; }
     .modal-confirm { background: #7c4dff; color: #fff; }
 
+    .support-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 12, 0.7);
+      z-index: 60;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+    }
+    .support-overlay.show { display: flex; }
+    .support-card {
+      width: min(420px, 100%);
+      background: linear-gradient(180deg, #20203a 0%, #141423 100%);
+      border: 1px solid #35355a;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+    .support-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #2a1a2e;
+      color: #f3c7ff;
+      font-size: 11px;
+      margin-bottom: 12px;
+    }
+    .support-card h3 {
+      font-size: 20px;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .support-card p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #c9c9df;
+      margin-bottom: 16px;
+    }
+    .support-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .support-actions button {
+      flex: 1 1 110px;
+      min-width: 0;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s, opacity 0.18s;
+    }
+    .support-actions button:hover { transform: translateY(-1px); opacity: 0.95; }
+    .support-primary { background: linear-gradient(135deg, #7c4dff, #5c6bc0); color: #fff; }
+    .support-secondary { background: #26263b; color: #e0e0f0; }
+    .support-tertiary { background: #1f2b34; color: #b8e7ff; }
+    .support-dont-show {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #9a9ab8;
+      margin-bottom: 2px;
+    }
+    .support-footer {
+      position: fixed;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .support-footer .hint {
+      font-size: 11px;
+      color: #666;
+      background: rgba(26, 26, 46, 0.92);
+      border: 1px solid #2a2a40;
+      border-radius: 999px;
+      padding: 8px 12px;
+      pointer-events: auto;
+    }
+    .support-links {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+    .support-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #2a2a40;
+      background: rgba(26, 26, 46, 0.92);
+      color: #ddd;
+      font-size: 11px;
+      text-decoration: none;
+      transition: border-color 0.18s, color 0.18s, transform 0.18s;
+    }
+    .support-link:hover {
+      transform: translateY(-1px);
+      border-color: #7c4dff;
+      color: #fff;
+    }
+
     /* ── Scrollbar ────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -216,6 +395,26 @@
         <span class="slider"></span>
       </div>
     </div>
+  </div>
+
+  <!-- Mode -->
+  <div class="section">
+    <div class="section-title">Input Mode</div>
+    <div class="mode-grid" id="modeGrid">
+      <label class="mode-option active" data-mode="accelerometer">
+        <input type="radio" name="detectionMode" value="accelerometer" id="modeAccelerometer" />
+        <span class="mode-label">Accelerometer</span>
+        <span class="mode-pill">Precise</span>
+        <span class="mode-desc">Uses supported motion sensors for fast, sharp slap detection.</span>
+      </label>
+      <label class="mode-option" data-mode="microphone">
+        <input type="radio" name="detectionMode" value="microphone" id="modeMicrophone" />
+        <span class="mode-label">Microphone</span>
+        <span class="mode-pill">Fallback</span>
+        <span class="mode-desc">Listens to mic spikes for devices without a sensor hub.</span>
+      </label>
+    </div>
+    <div class="mode-status" id="modeStatus">Checking sensor support...</div>
   </div>
 
   <!-- Detection -->
@@ -294,13 +493,50 @@
     </div>
   </div>
 
+  <div class="support-overlay" id="supportOverlay" aria-hidden="true">
+    <div class="support-card">
+      <div class="support-badge">Support the creator</div>
+      <h3>Loving the app?</h3>
+      <p>
+        If The Moaning Guy makes you laugh, saves you from boring silence, or just scratches
+        the slap-based chaos itch, please consider supporting the project.
+      </p>
+      <div class="support-actions">
+        <button class="support-primary" id="supportSponsorBtn">Sponsor</button>
+        <button class="support-secondary" id="supportKoFiBtn">Ko-fi</button>
+        <button class="support-tertiary" id="supportStarBtn">Star repo</button>
+      </div>
+      <label class="support-dont-show">
+        <input type="checkbox" id="supportNeverShow" />
+        Never show this again
+      </label>
+      <div class="modal-actions" style="justify-content: flex-end; margin-top: 10px;">
+        <button class="modal-cancel" id="supportLaterBtn">Maybe later</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="support-footer">
+    <div class="hint">A tiny clap for the chaos engine</div>
+    <div class="support-links">
+      <a href="https://github.com/sponsors/adityapatel-00" class="support-link" data-external="https://github.com/sponsors/adityapatel-00">Sponsor</a>
+      <a href="https://ko-fi.com/adityapatel_00" class="support-link" data-external="https://ko-fi.com/adityapatel_00">Ko-fi</a>
+      <a href="https://github.com/adityapatel_00/themoaningguy" class="support-link" data-external="https://github.com/adityapatel-00/themoaningguy">Star repo</a>
+    </div>
+  </div>
+
   <script>
     const { invoke } = window.__TAURI__.core;
     const { getCurrentWindow } = window.__TAURI__.window;
     const { open: openDialog } = window.__TAURI__.dialog;
+    const shellApi = window.__TAURI__.shell;
 
     // Elements
     const enabledToggle = document.getElementById('enabledToggle');
+    const modeGrid = document.getElementById('modeGrid');
+    const modeStatus = document.getElementById('modeStatus');
+    const modeAccelerometer = document.getElementById('modeAccelerometer');
+    const modeMicrophone = document.getElementById('modeMicrophone');
     const sensitivitySlider = document.getElementById('sensitivity');
     const sensitivityValue = document.getElementById('sensitivityValue');
     const cooldownSlider = document.getElementById('cooldown');
@@ -317,15 +553,99 @@
     const renameInput = document.getElementById('renameInput');
     const renameCancel = document.getElementById('renameCancel');
     const renameConfirm = document.getElementById('renameConfirm');
+    const supportOverlay = document.getElementById('supportOverlay');
+    const supportNeverShow = document.getElementById('supportNeverShow');
+    const supportSponsorBtn = document.getElementById('supportSponsorBtn');
+    const supportKoFiBtn = document.getElementById('supportKoFiBtn');
+    const supportStarBtn = document.getElementById('supportStarBtn');
+    const supportLaterBtn = document.getElementById('supportLaterBtn');
+    const supportLinks = document.querySelectorAll('[data-external]');
 
     let selectedBundle = null; // loaded from settings
     let expandedBundle = null;
     let renamingBundle = null;
+    let selectedMode = 'accelerometer';
+    let accelerometerSupported = false;
+    let supportPopupTimer = null;
+    let supportPromptHidden = false;
 
     // ── Sensitivity (inverted slider) ──────────────
     const SENS_MIN = 0.01, SENS_MAX = 0.5;
     const thresholdFromSlider = v => SENS_MAX + SENS_MIN - parseFloat(v);
     const sliderFromThreshold = t => SENS_MAX + SENS_MIN - t;
+
+    async function openExternal(url) {
+      try {
+        if (shellApi && typeof shellApi.open === 'function') {
+          await shellApi.open(url);
+          return;
+        }
+      } catch (err) {
+        console.error('shell open failed', err);
+      }
+
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function renderModeSelection() {
+      const accelOption = modeGrid.querySelector('[data-mode="accelerometer"]');
+      const micOption = modeGrid.querySelector('[data-mode="microphone"]');
+
+      modeAccelerometer.checked = selectedMode === 'accelerometer';
+      modeMicrophone.checked = selectedMode === 'microphone';
+
+      accelOption.classList.toggle('active', selectedMode === 'accelerometer');
+      micOption.classList.toggle('active', selectedMode === 'microphone');
+
+      accelOption.classList.toggle('disabled', !accelerometerSupported);
+
+      if (accelerometerSupported) {
+        modeStatus.textContent = 'Accelerometer detected on this device.';
+      } else {
+        modeStatus.textContent = 'No compatible sensor found, so microphone mode is the safe fallback.';
+      }
+
+      if (!accelerometerSupported && selectedMode === 'accelerometer') {
+        selectedMode = 'microphone';
+        renderModeSelection();
+      }
+    }
+
+    function setSupportPromptHidden(hidden) {
+      supportPromptHidden = hidden;
+      if (hidden) {
+        supportOverlay.classList.remove('show');
+        supportOverlay.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function openSupportPopup() {
+      if (supportPromptHidden) return;
+      supportOverlay.classList.add('show');
+      supportOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function scheduleSupportPopup() {
+      clearTimeout(supportPopupTimer);
+      if (supportPromptHidden) return;
+      supportPopupTimer = setTimeout(openSupportPopup, 3000);
+    }
+
+    async function persistSupportPreference() {
+      if (!supportNeverShow.checked) return;
+      await invoke('save_settings', {
+        newSettings: {
+          sensitivity: thresholdFromSlider(sensitivitySlider.value),
+          cooldownMs: parseInt(cooldownSlider.value),
+          volume: parseFloat(volumeSlider.value),
+          enabled: enabledToggle.checked,
+          detectionMode: selectedMode,
+          bundle: selectedBundle,
+          hideSupportPrompt: true,
+        },
+      });
+      setSupportPromptHidden(true);
+    }
 
     sensitivitySlider.addEventListener('input', () => {
       sensitivityValue.textContent = thresholdFromSlider(sensitivitySlider.value).toFixed(2);
@@ -335,6 +655,46 @@
     });
     volumeSlider.addEventListener('input', () => {
       volumeValue.textContent = Math.round(volumeSlider.value * 100) + '%';
+    });
+
+    modeGrid.addEventListener('click', (e) => {
+      const option = e.target.closest('.mode-option');
+      if (!option) return;
+      if (option.classList.contains('disabled')) return;
+
+      selectedMode = option.dataset.mode;
+      renderModeSelection();
+    });
+
+    supportSponsorBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      await openExternal('https://github.com/sponsors/adityapatel-00');
+    });
+    supportKoFiBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      await openExternal('https://ko-fi.com/adityapatel_00');
+    });
+    supportStarBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      await openExternal('https://github.com/adityapatel-00/themoaningguy');
+    });
+    supportLaterBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      supportOverlay.classList.remove('show');
+      supportOverlay.setAttribute('aria-hidden', 'true');
+    });
+
+    supportOverlay.addEventListener('click', (e) => {
+      if (e.target === supportOverlay) {
+        supportLaterBtn.click();
+      }
+    });
+
+    supportLinks.forEach((link) => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await openExternal(link.dataset.external);
+      });
     });
 
     // ── Bundle List ─────────────────────────────────
@@ -517,7 +877,10 @@
 
     // ── Load Settings ───────────────────────────────
     async function loadSettings() {
-      const s = await invoke('get_settings');
+      const [s, capabilities] = await Promise.all([
+        invoke('get_settings'),
+        invoke('get_detector_capabilities'),
+      ]);
       enabledToggle.checked = s.enabled;
       sensitivitySlider.value = sliderFromThreshold(s.sensitivity);
       sensitivityValue.textContent = s.sensitivity.toFixed(2);
@@ -526,6 +889,11 @@
       volumeSlider.value = s.volume;
       volumeValue.textContent = Math.round(s.volume * 100) + '%';
       selectedBundle = s.bundle;
+      selectedMode = s.detectionMode || 'microphone';
+      accelerometerSupported = !!capabilities.accelerometerAvailable;
+      supportPromptHidden = !!s.hideSupportPrompt;
+      supportNeverShow.checked = supportPromptHidden;
+      renderModeSelection();
     }
 
     // ── Save ────────────────────────────────────────
@@ -536,9 +904,12 @@
           cooldownMs: parseInt(cooldownSlider.value),
           volume: parseFloat(volumeSlider.value),
           enabled: enabledToggle.checked,
+          detectionMode: selectedMode,
           bundle: selectedBundle,
+          hideSupportPrompt: supportNeverShow.checked,
         },
       });
+      supportPromptHidden = supportNeverShow.checked;
       showToast('Settings saved!');
     });
 
@@ -563,7 +934,10 @@
     });
 
     // ── Init ────────────────────────────────────────
-    loadSettings().then(() => loadBundles());
+    loadSettings().then(() => {
+      loadBundles();
+      scheduleSupportPopup();
+    });
   </script>
 </body>
 </html>
