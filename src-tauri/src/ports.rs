@@ -919,7 +919,7 @@ unsafe fn register_macos_matching_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        kIOMatchedNotification.as_ptr().cast::<[i8; 128]>(),
+        kIOMatchedNotification.as_ptr().cast_mut().cast::<[i8; 128]>(),
         Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
@@ -944,7 +944,7 @@ unsafe fn register_macos_terminated_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        kIOTerminatedNotification.as_ptr().cast::<[i8; 128]>(),
+        kIOTerminatedNotification.as_ptr().cast_mut().cast::<[i8; 128]>(),
         Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
