@@ -18,7 +18,7 @@ use std::process::Command;
 use battery::{Manager, State as BatteryState};
 #[cfg(all(not(windows), not(target_os = "macos")))]
 use display_info::DisplayInfo;
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 use rusb::UsbContext;
 #[cfg(all(not(windows), not(target_os = "macos")))]
 use sysinfo::Networks;
@@ -337,6 +337,7 @@ fn spawn_monitor_thread(
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 fn spawn_polling_monitor_loop(
     stop_rx: mpsc::Receiver<()>,
     on_event: Arc<dyn Fn(PortKind, bool) + Send + Sync>,
@@ -1271,7 +1272,7 @@ pub fn repair_rules(rules: &mut Vec<PortRule>) {
         .collect();
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 fn is_probably_thunderbolt_or_dock<T: UsbContext>(device: &rusb::Device<T>) -> bool {
     let descriptor = match device.device_descriptor() {
         Ok(descriptor) => descriptor,
