@@ -35,8 +35,12 @@ windows-sys = { version = "0.59", features = [
 ] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-udev = "0.9"
+udev = { version = "0.9", optional = true }
 libc = "0.2"
+
+[features]
+default = []
+linux-udev = ["udev"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-core-foundation = "0.3"

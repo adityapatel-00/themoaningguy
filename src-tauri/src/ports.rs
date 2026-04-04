@@ -14,19 +14,19 @@ use std::time::Duration;
 #[cfg(target_os = "macos")]
 use std::process::Command;
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 use battery::{Manager, State as BatteryState};
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 use display_info::DisplayInfo;
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 use rusb::UsbContext;
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 use sysinfo::Networks;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-udev"))]
 use libc::{poll, pollfd, POLLIN};
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-udev"))]
 use udev::MonitorBuilder;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-udev"))]
 use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "macos")]
 use objc2_core_foundation::{
@@ -257,9 +257,14 @@ pub fn port_monitor_mode_label() -> &'static str {
         "Snapshot polling"
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", feature = "linux-udev"))]
     {
         "Event-driven (udev) with snapshot fallback"
+    }
+
+    #[cfg(all(target_os = "linux", not(feature = "linux-udev")))]
+    {
+        "Snapshot polling"
     }
 
     #[cfg(target_os = "macos")]
@@ -314,7 +319,7 @@ fn spawn_monitor_thread(
     stop_rx: mpsc::Receiver<()>,
     on_event: Arc<dyn Fn(PortKind, bool) + Send + Sync>,
 ) -> JoinHandle<()> {
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", feature = "linux-udev"))]
     {
         return thread::spawn(move || spawn_linux_monitor_loop(stop_rx, on_event));
     }
@@ -324,7 +329,10 @@ fn spawn_monitor_thread(
         return thread::spawn(move || spawn_macos_monitor_loop(stop_rx, on_event));
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(any(
+        all(target_os = "linux", not(feature = "linux-udev")),
+        all(not(target_os = "linux"), not(target_os = "macos"))
+    ))]
     {
         return thread::spawn(move || spawn_polling_monitor_loop(stop_rx, on_event));
     }
@@ -615,7 +623,7 @@ fn wide_string(value: &str) -> Vec<u16> {
     value.encode_utf16().chain(Some(0)).collect()
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "linux-udev"))]
 fn spawn_linux_monitor_loop(
     stop_rx: mpsc::Receiver<()>,
     on_event: Arc<dyn Fn(PortKind, bool) + Send + Sync>,
@@ -830,7 +838,7 @@ fn spawn_macos_monitor_loop(
 
     if let Some(source) = run_loop_source.as_ref() {
         unsafe {
-            CFRunLoopAddSource(run_loop.as_ref(), source.as_ref(), kCFRunLoopDefaultMode);
+            CFRunLoopAddSource(run_loop.as_ref(), Some(source.as_ref()), kCFRunLoopDefaultMode);
         }
     }
 
@@ -912,8 +920,8 @@ unsafe fn register_macos_matching_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        kIOMatchedNotification,
-        Some(matching),
+        kIOMatchedNotification.as_ptr() as *mut i8,
+        Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
         &mut iterator,
@@ -937,8 +945,8 @@ unsafe fn register_macos_terminated_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        kIOTerminatedNotification,
-        Some(matching),
+        kIOTerminatedNotification.as_ptr() as *mut i8,
+        Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
         &mut iterator,
