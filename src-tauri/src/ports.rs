@@ -824,7 +824,7 @@ fn spawn_macos_monitor_loop(
     let event_tx = Box::new(event_tx);
     let event_tx_ptr = Box::into_raw(event_tx) as *mut c_void;
 
-    let notify_port = unsafe { IONotificationPort::create(0) };
+    let notify_port = IONotificationPort::create(0);
     let run_loop_source = unsafe { IONotificationPort::run_loop_source(notify_port) };
 
     let Some(run_loop) = CFRunLoop::current() else {
@@ -836,7 +836,9 @@ fn spawn_macos_monitor_loop(
     };
 
     if let Some(source) = run_loop_source.as_ref() {
-        run_loop.add_source(Some(source.as_ref()), kCFRunLoopDefaultMode);
+        unsafe {
+            run_loop.add_source(Some(source.as_ref()), kCFRunLoopDefaultMode);
+        }
     }
 
     let mut watchers = Vec::new();
@@ -868,7 +870,9 @@ fn spawn_macos_monitor_loop(
 
         while event_rx.try_recv().is_ok() {}
 
-        CFRunLoop::run_in_mode(kCFRunLoopDefaultMode, 0.5, true);
+        unsafe {
+            CFRunLoop::run_in_mode(kCFRunLoopDefaultMode, 0.5, true);
+        }
 
         if event_rx.try_recv().is_ok() {
             let current = poll_port_snapshot();
@@ -915,7 +919,7 @@ unsafe fn register_macos_matching_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        std::mem::transmute(kIOMatchedNotification),
+        kIOMatchedNotification.as_ptr().cast::<[i8; 128]>(),
         Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
@@ -940,7 +944,7 @@ unsafe fn register_macos_terminated_notification(
     let mut iterator: io_iterator_t = 0;
     let result = IOServiceAddMatchingNotification(
         notify_port,
-        std::mem::transmute(kIOTerminatedNotification),
+        kIOTerminatedNotification.as_ptr().cast::<[i8; 128]>(),
         Some(unsafe { std::mem::transmute(matching) }),
         Some(macos_matching_callback),
         ref_con,
