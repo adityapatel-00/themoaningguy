@@ -11,7 +11,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0f0f1a;
       color: #e0e0e0;
-      padding: 24px;
+      padding: 24px 24px 168px;
       user-select: none;
       overflow-y: auto;
     }
@@ -27,6 +27,264 @@
       letter-spacing: 1.5px; color: #666; margin-bottom: 12px;
       display: flex; align-items: center; justify-content: space-between;
     }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .mode-option {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #1a1a2e;
+      border: 1px solid #2a2a40;
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+    }
+    .mode-option:hover { background: #202038; transform: translateY(-1px); }
+    .mode-option input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .mode-option .mode-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .mode-option .mode-desc {
+      font-size: 12px;
+      line-height: 1.4;
+      color: #8b8ba8;
+    }
+    .mode-option .mode-pill {
+      align-self: flex-start;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: #292948;
+      color: #a7a7d9;
+    }
+    .mode-option.active {
+      border-color: #7c4dff;
+      background: #1e1e3a;
+      box-shadow: 0 0 0 1px #7c4dff44 inset;
+    }
+    .mode-option.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .mode-option.disabled:hover { transform: none; background: #1a1a2e; }
+    .mode-status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #7c4dff;
+    }
+
+    .port-rules {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .port-rule {
+      background: #1a1a2e;
+      border: 1px solid #2a2a40;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .port-rule.disabled { opacity: 0.55; }
+    .port-rule-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .port-rule-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .port-rule-title h4 { font-size: 14px; color: #fff; }
+    .port-rule-title p { font-size: 12px; color: #7e7e98; line-height: 1.4; }
+    .port-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .port-badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #292948;
+      color: #a7a7d9;
+    }
+    .port-badge.live { background: #123321; color: #7fe29c; }
+    .port-badge.off { background: #3b2020; color: #ff9c9c; }
+    .port-badge.warn { background: #3b3220; color: #ffd58c; }
+    .port-badge.available { background: #123321; color: #7fe29c; }
+    .port-badge.unavailable { background: #3b2020; color: #ff9c9c; }
+    .diagnostics {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #141423;
+      border: 1px solid #2a2a40;
+    }
+    .diagnostics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .diagnostics-header button {
+      border: 1px solid #2a2a40;
+      background: #1a1a2e;
+      color: #ddd;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .diagnostics-header button:hover {
+      border-color: #7c4dff;
+      color: #fff;
+    }
+    .diagnostics-body {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .diagnostics.expanded .diagnostics-body {
+      display: flex;
+    }
+    .diagnostics-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 0;
+    }
+    .diagnostics-toggle .chevron {
+      display: inline-block;
+      transition: transform 0.18s ease;
+      color: #7c4dff;
+    }
+    .diagnostics.expanded .diagnostics-toggle .chevron {
+      transform: rotate(90deg);
+    }
+    .diagnostics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .diagnostics-item {
+      background: #1a1a2e;
+      border: 1px solid #2a2a40;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .diagnostics-item label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6f6f8e;
+    }
+    .diagnostics-item span {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .diagnostics-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .diagnostic-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid #2a2a40;
+      background: rgba(26, 26, 46, 0.92);
+      font-size: 11px;
+      color: #ddd;
+    }
+    .diagnostic-chip.ok { border-color: #245c3b; color: #8ef0b1; }
+    .diagnostic-chip.warn { border-color: #66501f; color: #ffd58c; }
+    .diagnostic-chip.off { border-color: #6a2b2b; color: #ff9c9c; }
+    .port-rule-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 10px;
+    }
+    .port-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .port-field label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6f6f8e;
+    }
+    .port-field select {
+      background: #0f0f1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      padding: 10px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+    .port-field select:focus { border-color: #7c4dff; }
+    .port-field select option { background: #0f0f1a; color: #e0e0e0; }
+    .port-checks {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .port-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #131320;
+      border: 1px solid #27273e;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #e0e0e0;
+    }
+    .port-check input { accent-color: #7c4dff; }
 
     /* ── Toggle ──────────────────────────────────── */
     .toggle-row {
@@ -146,7 +404,19 @@
     .btn-create:hover { opacity: 0.85; }
 
     /* ── Buttons ──────────────────────────────────── */
-    .button-row { display: flex; gap: 10px; margin-top: 24px; }
+    .button-row {
+      position: fixed;
+      left: 24px;
+      right: 24px;
+      bottom: 78px;
+      display: flex;
+      gap: 10px;
+      z-index: 55;
+      padding: 0;
+    }
+    .button-row .btn {
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+    }
     .btn {
       flex: 1; padding: 12px; border: none; border-radius: 10px;
       font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
@@ -192,6 +462,121 @@
     .modal-cancel { background: #333; color: #e0e0e0; }
     .modal-confirm { background: #7c4dff; color: #fff; }
 
+    .support-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 12, 0.7);
+      z-index: 60;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+    }
+    .support-overlay.show { display: flex; }
+    .support-card {
+      width: min(420px, 100%);
+      background: linear-gradient(180deg, #20203a 0%, #141423 100%);
+      border: 1px solid #35355a;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+    .support-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #2a1a2e;
+      color: #f3c7ff;
+      font-size: 11px;
+      margin-bottom: 12px;
+    }
+    .support-card h3 {
+      font-size: 20px;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .support-card p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #c9c9df;
+      margin-bottom: 16px;
+    }
+    .support-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .support-actions button {
+      flex: 1 1 110px;
+      min-width: 0;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s, opacity 0.18s;
+    }
+    .support-actions button:hover { transform: translateY(-1px); opacity: 0.95; }
+    .support-primary { background: linear-gradient(135deg, #7c4dff, #5c6bc0); color: #fff; }
+    .support-secondary { background: #26263b; color: #e0e0f0; }
+    .support-tertiary { background: #1f2b34; color: #b8e7ff; }
+    .support-dont-show {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #9a9ab8;
+      margin-bottom: 2px;
+    }
+    .support-footer {
+      position: fixed;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .support-footer .hint {
+      font-size: 11px;
+      color: #666;
+      background: rgba(26, 26, 46, 0.92);
+      border: 1px solid #2a2a40;
+      border-radius: 999px;
+      padding: 8px 12px;
+      pointer-events: auto;
+    }
+    .support-links {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+    .support-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #2a2a40;
+      background: rgba(26, 26, 46, 0.92);
+      color: #ddd;
+      font-size: 11px;
+      text-decoration: none;
+      transition: border-color 0.18s, color 0.18s, transform 0.18s;
+    }
+    .support-link:hover {
+      transform: translateY(-1px);
+      border-color: #7c4dff;
+      color: #fff;
+    }
+
     /* ── Scrollbar ────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -216,6 +601,26 @@
         <span class="slider"></span>
       </div>
     </div>
+  </div>
+
+  <!-- Mode -->
+  <div class="section">
+    <div class="section-title">Input Mode</div>
+    <div class="mode-grid" id="modeGrid">
+      <label class="mode-option active" data-mode="accelerometer">
+        <input type="radio" name="detectionMode" value="accelerometer" id="modeAccelerometer" />
+        <span class="mode-label">Accelerometer</span>
+        <span class="mode-pill">Precise</span>
+        <span class="mode-desc">Uses supported motion sensors for fast, sharp slap detection.</span>
+      </label>
+      <label class="mode-option" data-mode="microphone">
+        <input type="radio" name="detectionMode" value="microphone" id="modeMicrophone" />
+        <span class="mode-label">Microphone</span>
+        <span class="mode-pill">Fallback</span>
+        <span class="mode-desc">Listens to mic spikes for devices without a sensor hub.</span>
+      </label>
+    </div>
+    <div class="mode-status" id="modeStatus">Checking sensor support...</div>
   </div>
 
   <!-- Detection -->
@@ -274,6 +679,49 @@
     </div>
   </div>
 
+  <!-- Port Detection -->
+  <div class="section">
+    <div class="section-title">
+      <span>Diagnostics</span>
+      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">collapsed by default</span>
+    </div>
+    <div class="diagnostics" id="diagnosticsPanel">
+      <div class="diagnostics-header">
+        <button class="diagnostics-toggle" id="diagnosticsToggle" type="button" aria-expanded="false">
+          <span class="chevron">›</span>
+          <span>Runtime view</span>
+        </button>
+        <button id="diagnosticsRefresh" type="button">Refresh</button>
+      </div>
+      <div class="diagnostics-body">
+        <div class="diagnostics-grid">
+          <div class="diagnostics-item">
+            <label>Platform</label>
+            <span id="diagPlatform">-</span>
+          </div>
+          <div class="diagnostics-item">
+            <label>Port monitor</label>
+            <span id="diagPortMode">-</span>
+          </div>
+          <div class="diagnostics-item">
+            <label>Accelerometer</label>
+            <span id="diagAccelMode">-</span>
+          </div>
+        </div>
+        <div class="diagnostics-chips" id="diagPortChips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Port Detection -->
+  <div class="section">
+    <div class="section-title">
+      <span>Port Detection</span>
+      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">best effort by OS</span>
+    </div>
+    <div class="port-rules" id="portRulesList"></div>
+  </div>
+
   <!-- Buttons -->
   <div class="button-row">
     <button class="btn btn-test" id="testBtn">Test</button>
@@ -294,19 +742,61 @@
     </div>
   </div>
 
+  <div class="support-overlay" id="supportOverlay" aria-hidden="true">
+    <div class="support-card">
+      <div class="support-badge">Support the creator</div>
+      <h3>Loving the app?</h3>
+      <p>
+        If The Moaning Guy makes you laugh, saves you from boring silence, or just scratches
+        the slap-based chaos itch, please consider supporting the project.
+      </p>
+      <div class="support-actions">
+        <button class="support-primary" id="supportSponsorBtn">Sponsor</button>
+        <button class="support-secondary" id="supportKoFiBtn">Ko-fi</button>
+        <button class="support-tertiary" id="supportStarBtn">Star repo</button>
+      </div>
+      <label class="support-dont-show">
+        <input type="checkbox" id="supportNeverShow" />
+        Never show this again
+      </label>
+      <div class="modal-actions" style="justify-content: flex-end; margin-top: 10px;">
+        <button class="modal-cancel" id="supportLaterBtn">Maybe later</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="support-footer">
+    <div class="hint">A tiny clap for the chaos engine</div>
+    <div class="support-links">
+      <a href="https://github.com/sponsors/adityapatel-00" class="support-link" data-external="https://github.com/sponsors/adityapatel-00">Sponsor</a>
+      <a href="https://ko-fi.com/adityapatel_00" class="support-link" data-external="https://ko-fi.com/adityapatel_00">Ko-fi</a>
+      <a href="https://github.com/AdiYd/themoaningguy" class="support-link" data-external="https://github.com/AdiYd/themoaningguy">Star repo</a>
+    </div>
+  </div>
+
   <script>
     const { invoke } = window.__TAURI__.core;
     const { getCurrentWindow } = window.__TAURI__.window;
     const { open: openDialog } = window.__TAURI__.dialog;
+    const shellApi = window.__TAURI__.shell;
 
     // Elements
     const enabledToggle = document.getElementById('enabledToggle');
+    const modeGrid = document.getElementById('modeGrid');
+    const modeStatus = document.getElementById('modeStatus');
+    const modeAccelerometer = document.getElementById('modeAccelerometer');
+    const modeMicrophone = document.getElementById('modeMicrophone');
     const sensitivitySlider = document.getElementById('sensitivity');
     const sensitivityValue = document.getElementById('sensitivityValue');
     const cooldownSlider = document.getElementById('cooldown');
     const cooldownValue = document.getElementById('cooldownValue');
     const volumeSlider = document.getElementById('volume');
     const volumeValue = document.getElementById('volumeValue');
+    const diagPlatform = document.getElementById('diagPlatform');
+    const diagPortMode = document.getElementById('diagPortMode');
+    const diagAccelMode = document.getElementById('diagAccelMode');
+    const diagPortChips = document.getElementById('diagPortChips');
+    const portRulesList = document.getElementById('portRulesList');
     const bundleList = document.getElementById('bundleList');
     const newBundleName = document.getElementById('newBundleName');
     const createBundleBtn = document.getElementById('createBundleBtn');
@@ -317,15 +807,249 @@
     const renameInput = document.getElementById('renameInput');
     const renameCancel = document.getElementById('renameCancel');
     const renameConfirm = document.getElementById('renameConfirm');
+    const supportOverlay = document.getElementById('supportOverlay');
+    const supportNeverShow = document.getElementById('supportNeverShow');
+    const supportSponsorBtn = document.getElementById('supportSponsorBtn');
+    const supportKoFiBtn = document.getElementById('supportKoFiBtn');
+    const supportStarBtn = document.getElementById('supportStarBtn');
+    const supportLaterBtn = document.getElementById('supportLaterBtn');
+    const diagnosticsPanel = document.getElementById('diagnosticsPanel');
+    const diagnosticsToggle = document.getElementById('diagnosticsToggle');
+    const diagnosticsRefresh = document.getElementById('diagnosticsRefresh');
+    const supportLinks = document.querySelectorAll('[data-external]');
 
     let selectedBundle = null; // loaded from settings
     let expandedBundle = null;
     let renamingBundle = null;
+    let selectedMode = 'accelerometer';
+    let accelerometerSupported = false;
+    let portCapabilities = [];
+    let portRules = [];
+    let availableBundles = [];
+    let supportPopupTimer = null;
+    let supportPromptHidden = false;
+    let runtimeDiagnostics = null;
 
     // ── Sensitivity (inverted slider) ──────────────
     const SENS_MIN = 0.01, SENS_MAX = 0.5;
     const thresholdFromSlider = v => SENS_MAX + SENS_MIN - parseFloat(v);
     const sliderFromThreshold = t => SENS_MAX + SENS_MIN - t;
+
+    async function openExternal(url) {
+      try {
+        if (shellApi && typeof shellApi.open === 'function') {
+          await shellApi.open(url);
+          return;
+        }
+      } catch (err) {
+        console.error('shell open failed', err);
+      }
+
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function setDiagnosticsExpanded(expanded) {
+      diagnosticsPanel.classList.toggle('expanded', expanded);
+      diagnosticsToggle.setAttribute('aria-expanded', String(expanded));
+    }
+
+    function renderModeSelection() {
+      const accelOption = modeGrid.querySelector('[data-mode="accelerometer"]');
+      const micOption = modeGrid.querySelector('[data-mode="microphone"]');
+
+      modeAccelerometer.checked = selectedMode === 'accelerometer';
+      modeMicrophone.checked = selectedMode === 'microphone';
+
+      accelOption.classList.toggle('active', selectedMode === 'accelerometer');
+      micOption.classList.toggle('active', selectedMode === 'microphone');
+
+      accelOption.classList.toggle('disabled', !accelerometerSupported);
+
+      if (accelerometerSupported) {
+        modeStatus.textContent = 'Accelerometer detected on this device.';
+      } else {
+        modeStatus.textContent = 'No compatible sensor found, so microphone mode is the safe fallback.';
+      }
+
+      if (!accelerometerSupported && selectedMode === 'accelerometer') {
+        selectedMode = 'microphone';
+        renderModeSelection();
+      }
+    }
+
+    function setSupportPromptHidden(hidden) {
+      supportPromptHidden = hidden;
+      if (hidden) {
+        supportOverlay.classList.remove('show');
+        supportOverlay.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function openSupportPopup() {
+      if (supportPromptHidden) return;
+      supportOverlay.classList.add('show');
+      supportOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function scheduleSupportPopup() {
+      clearTimeout(supportPopupTimer);
+      if (supportPromptHidden) return;
+      const delayMs = 5000 + Math.floor(Math.random() * 5001);
+      supportPopupTimer = setTimeout(openSupportPopup, delayMs);
+    }
+
+    async function persistSupportPreference() {
+      if (!supportNeverShow.checked) return;
+      await invoke('save_settings', {
+        newSettings: {
+          sensitivity: thresholdFromSlider(sensitivitySlider.value),
+          cooldownMs: parseInt(cooldownSlider.value),
+          volume: parseFloat(volumeSlider.value),
+          enabled: enabledToggle.checked,
+          detectionMode: selectedMode,
+          bundle: selectedBundle,
+          portRules,
+          hideSupportPrompt: true,
+        },
+      });
+      setSupportPromptHidden(true);
+    }
+
+    const PORT_KIND_ORDER = [
+      'charging',
+      'usbStorage',
+      'externalDisplay',
+      'ethernet',
+      'thunderboltDock',
+    ];
+
+    function ensurePortRules() {
+      const byKind = new Map((portRules || []).map(rule => [rule.kind, rule]));
+      portRules = PORT_KIND_ORDER.map(kind => byKind.get(kind) || {
+        kind,
+        bundle: availableBundles[0] || 'default',
+        onConnect: false,
+        onDisconnect: false,
+      });
+
+      if (availableBundles.length > 0) {
+        portRules.forEach((rule) => {
+          if (!availableBundles.includes(rule.bundle)) {
+            rule.bundle = availableBundles[0];
+          }
+        });
+      }
+    }
+
+    function bundleOptionsHtml(currentValue) {
+      if (availableBundles.length === 0) {
+        return `<option value="default"${currentValue === 'default' ? ' selected' : ''}>default</option>`;
+      }
+      return availableBundles.map(name => {
+        const selected = name === currentValue ? ' selected' : '';
+        return `<option value="${name}"${selected}>${name}</option>`;
+      }).join('');
+    }
+
+    function portStatusMeta(capability) {
+      if (!capability.supported) {
+        return { label: 'Unavailable', className: 'unavailable' };
+      }
+      return { label: 'Available', className: 'available' };
+    }
+
+    function renderPortRules() {
+      if (!portRulesList) return;
+      ensurePortRules();
+
+      const capabilityMap = new Map(portCapabilities.map(item => [item.kind, item]));
+      portRulesList.innerHTML = '';
+
+      portRules.forEach((rule) => {
+        const capability = capabilityMap.get(rule.kind) || {
+          kind: rule.kind,
+          label: rule.kind,
+          supported: false,
+          connected: false,
+        };
+        const status = portStatusMeta(capability);
+
+        const card = document.createElement('div');
+        card.className = 'port-rule';
+        card.innerHTML = `
+          <div class="port-rule-top">
+            <div class="port-rule-title">
+              <h4>${capability.label}</h4>
+            </div>
+            <div class="port-badges">
+              <span class="port-badge ${status.className}">${status.label}</span>
+            </div>
+          </div>
+          <div class="port-rule-grid">
+            <div class="port-field">
+              <label>Audio pack</label>
+              <select data-port-bundle="${rule.kind}">
+                ${bundleOptionsHtml(rule.bundle)}
+              </select>
+            </div>
+            <div class="port-field">
+              <label>Triggers</label>
+              <div class="port-checks">
+                <label class="port-check">
+                  <input type="checkbox" ${rule.onConnect ? 'checked' : ''} data-port-connect="${rule.kind}" />
+                  Connect
+                </label>
+                <label class="port-check">
+                  <input type="checkbox" ${rule.onDisconnect ? 'checked' : ''} data-port-disconnect="${rule.kind}" />
+                  Removal
+                </label>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const bundleSelect = card.querySelector(`[data-port-bundle="${rule.kind}"]`);
+        bundleSelect.addEventListener('change', (e) => {
+          rule.bundle = e.target.value;
+        });
+
+        const connectToggle = card.querySelector(`[data-port-connect="${rule.kind}"]`);
+        connectToggle.addEventListener('change', (e) => {
+          rule.onConnect = e.target.checked;
+        });
+
+        const disconnectToggle = card.querySelector(`[data-port-disconnect="${rule.kind}"]`);
+        disconnectToggle.addEventListener('change', (e) => {
+          rule.onDisconnect = e.target.checked;
+        });
+
+        portRulesList.appendChild(card);
+      });
+    }
+
+    function portChipClass(capability) {
+      if (!capability.supported) return 'off';
+      return capability.connected ? 'ok' : 'warn';
+    }
+
+    function renderDiagnostics() {
+      if (!runtimeDiagnostics) return;
+
+      diagPlatform.textContent = runtimeDiagnostics.platform || '-';
+      diagPortMode.textContent = runtimeDiagnostics.portMonitorMode || '-';
+      diagAccelMode.textContent = runtimeDiagnostics.accelerometerAvailable
+        ? 'Available'
+        : 'Fallback only';
+
+      const ports = Array.isArray(runtimeDiagnostics.ports) ? runtimeDiagnostics.ports : [];
+      diagPortChips.innerHTML = ports.map((port) => {
+        const className = portChipClass(port);
+        const stateText = port.supported
+          ? (port.connected ? 'Detected' : 'Not active')
+          : 'Unavailable';
+        return `<span class="diagnostic-chip ${className}">${port.label}: ${stateText}</span>`;
+      }).join('');
+    }
 
     sensitivitySlider.addEventListener('input', () => {
       sensitivityValue.textContent = thresholdFromSlider(sensitivitySlider.value).toFixed(2);
@@ -337,9 +1061,54 @@
       volumeValue.textContent = Math.round(volumeSlider.value * 100) + '%';
     });
 
+    modeGrid.addEventListener('click', (e) => {
+      const option = e.target.closest('.mode-option');
+      if (!option) return;
+      if (option.classList.contains('disabled')) return;
+
+      selectedMode = option.dataset.mode;
+      renderModeSelection();
+    });
+
+    supportSponsorBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      await openExternal('https://github.com/sponsors/adityapatel-00');
+    });
+    supportKoFiBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      await openExternal('https://ko-fi.com/adityapatel_00');
+    });
+    supportStarBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      await openExternal('https://github.com/AdiYd/themoaningguy');
+    });
+    supportLaterBtn.addEventListener('click', async () => {
+      await persistSupportPreference();
+      supportOverlay.classList.remove('show');
+      supportOverlay.setAttribute('aria-hidden', 'true');
+    });
+
+    supportOverlay.addEventListener('click', (e) => {
+      if (e.target === supportOverlay) {
+        supportLaterBtn.click();
+      }
+    });
+
+    supportLinks.forEach((link) => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await openExternal(link.dataset.external);
+      });
+    });
+
     // ── Bundle List ─────────────────────────────────
     async function loadBundles() {
       const bundles = await invoke('list_bundles');
+      availableBundles = bundles.map(b => b.name);
+      if (selectedBundle && !availableBundles.includes(selectedBundle)) {
+        selectedBundle = availableBundles[0] || '';
+      }
+      ensurePortRules();
       bundleList.innerHTML = '';
 
       for (const b of bundles) {
@@ -440,6 +1209,8 @@
           bundleList.appendChild(panel);
         }
       }
+
+      renderPortRules();
     }
 
     // ── Create Bundle ───────────────────────────────
@@ -517,7 +1288,12 @@
 
     // ── Load Settings ───────────────────────────────
     async function loadSettings() {
-      const s = await invoke('get_settings');
+      const [s, detectorCaps, portCaps, diagnostics] = await Promise.all([
+        invoke('get_settings'),
+        invoke('get_detector_capabilities'),
+        invoke('get_port_capabilities'),
+        invoke('get_runtime_diagnostics'),
+      ]);
       enabledToggle.checked = s.enabled;
       sensitivitySlider.value = sliderFromThreshold(s.sensitivity);
       sensitivityValue.textContent = s.sensitivity.toFixed(2);
@@ -526,7 +1302,27 @@
       volumeSlider.value = s.volume;
       volumeValue.textContent = Math.round(s.volume * 100) + '%';
       selectedBundle = s.bundle;
+      selectedMode = s.detectionMode || 'microphone';
+      accelerometerSupported = !!detectorCaps.accelerometerAvailable;
+      portCapabilities = Array.isArray(portCaps.ports) ? portCaps.ports : [];
+      portRules = Array.isArray(s.portRules) ? s.portRules : [];
+      runtimeDiagnostics = diagnostics || null;
+      supportPromptHidden = !!s.hideSupportPrompt;
+      supportNeverShow.checked = supportPromptHidden;
+      renderModeSelection();
+      renderPortRules();
+      renderDiagnostics();
     }
+
+    diagnosticsToggle.addEventListener('click', () => {
+      setDiagnosticsExpanded(!diagnosticsPanel.classList.contains('expanded'));
+    });
+
+    diagnosticsRefresh.addEventListener('click', async () => {
+      runtimeDiagnostics = await invoke('get_runtime_diagnostics');
+      renderDiagnostics();
+      showToast('Diagnostics refreshed');
+    });
 
     // ── Save ────────────────────────────────────────
     saveBtn.addEventListener('click', async () => {
@@ -536,9 +1332,13 @@
           cooldownMs: parseInt(cooldownSlider.value),
           volume: parseFloat(volumeSlider.value),
           enabled: enabledToggle.checked,
+          detectionMode: selectedMode,
           bundle: selectedBundle,
+          portRules,
+          hideSupportPrompt: supportNeverShow.checked,
         },
       });
+      supportPromptHidden = supportNeverShow.checked;
       showToast('Settings saved!');
     });
 
@@ -563,7 +1363,11 @@
     });
 
     // ── Init ────────────────────────────────────────
-    loadSettings().then(() => loadBundles());
+    loadSettings().then(() => {
+      setDiagnosticsExpanded(false);
+      loadBundles();
+      scheduleSupportPopup();
+    });
   </script>
 </body>
 </html>
