@@ -927,7 +927,7 @@
       const byKind = new Map((portRules || []).map(rule => [rule.kind, rule]));
       portRules = PORT_KIND_ORDER.map(kind => byKind.get(kind) || {
         kind,
-        bundle: availableBundles[0] || 'default',
+        bundle: availableBundles[0] || '',
         onConnect: false,
         onDisconnect: false,
       });
@@ -943,7 +943,7 @@
 
     function bundleOptionsHtml(currentValue) {
       if (availableBundles.length === 0) {
-        return `<option value="default"${currentValue === 'default' ? ' selected' : ''}>default</option>`;
+        return `<option value="" selected>No bundle selected</option>`;
       }
       return availableBundles.map(name => {
         const selected = name === currentValue ? ' selected' : '';
@@ -1149,10 +1149,6 @@
         // Delete
         item.querySelector('.delete-btn').addEventListener('click', async (e) => {
           e.stopPropagation();
-          if (bundles.length <= 1) {
-            showToast('Cannot delete the last bundle');
-            return;
-          }
           await invoke('delete_bundle', { name: b.name });
           if (selectedBundle === b.name) {
             selectedBundle = bundles.find(x => x.name !== b.name)?.name || '';

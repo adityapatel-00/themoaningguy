@@ -10,6 +10,7 @@ use std::mem::size_of;
 use std::ptr::null;
 use std::sync::{mpsc, Arc};
 use std::thread::{self, JoinHandle};
+#[cfg(not(target_os = "macos"))]
 use std::time::Duration;
 #[cfg(target_os = "macos")]
 use std::process::Command;

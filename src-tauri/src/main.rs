@@ -50,6 +50,24 @@ struct RuntimeDiagnostics {
     ports: Vec<ports::PortCapability>,
 }
 
+fn sanitize_settings_for_available_bundles(settings: &mut Settings, player: &PlayerHandle) {
+    let fallback = player.first_playable_bundle().unwrap_or_default();
+
+    if !player.bundle_has_sounds(&settings.bundle) {
+        settings.bundle = fallback.clone();
+    }
+
+    for rule in settings.port_rules.iter_mut() {
+        if !player.bundle_has_sounds(&rule.bundle) {
+            rule.bundle = fallback.clone();
+        }
+    }
+
+    if settings.enabled && settings.bundle.is_empty() {
+        settings.enabled = false;
+    }
+}
+
 // ── Settings Commands ───────────────────────────────────────────────
 
 #[tauri::command]
@@ -66,6 +84,7 @@ fn save_settings(
     let mut s = state.settings.lock().unwrap();
     *s = new_settings;
     s.validate();
+    sanitize_settings_for_available_bundles(&mut s, &state.player);
     s.save(&app_handle);
     let sc = s.clone();
     drop(s);
@@ -89,6 +108,7 @@ fn toggle_enabled(
 ) -> bool {
     let mut s = state.settings.lock().unwrap();
     s.enabled = !s.enabled;
+    sanitize_settings_for_available_bundles(&mut s, &state.player);
     s.save(&app_handle);
     let sc = s.clone();
     drop(s);
@@ -156,9 +176,10 @@ fn delete_bundle(
 
     let available = state.player.list_bundles();
     let fallback = available
-        .first()
+        .iter()
+        .find(|bundle| bundle.count > 0)
         .map(|bundle| bundle.name.clone())
-        .unwrap_or_else(|| "default".to_string());
+        .unwrap_or_default();
 
     let mut settings = state.settings.lock().unwrap();
     if settings.bundle == name {
@@ -249,6 +270,10 @@ fn main() {
                 .join("sounds");
 
             let player = Arc::new(PlayerHandle::new(sounds_dir));
+            let mut settings = settings;
+            settings.validate();
+            sanitize_settings_for_available_bundles(&mut settings, &player);
+            settings.save(&app.handle());
             let shared_settings = Arc::new(Mutex::new(settings.clone()));
 
             let player_ref = player.clone();
