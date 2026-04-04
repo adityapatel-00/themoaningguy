@@ -9,6 +9,11 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/github/sponsors/adityapatel-00" />
+  <img src="https://img.shields.io/github/downloads/adityapatel-00/themoaningguy/total" />
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Tauri-v2-7c4dff?style=flat-square" alt="Tauri v2" />
   <img src="https://img.shields.io/badge/Rust-Backend-orange?style=flat-square" alt="Rust" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square" alt="Cross-platform" />
