@@ -11,7 +11,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0f0f1a;
       color: #e0e0e0;
-      padding: 24px 24px 96px;
+      padding: 24px 24px 168px;
       user-select: none;
       overflow-y: auto;
     }
@@ -91,6 +91,200 @@
       font-size: 12px;
       color: #7c4dff;
     }
+
+    .port-rules {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .port-rule {
+      background: #1a1a2e;
+      border: 1px solid #2a2a40;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .port-rule.disabled { opacity: 0.55; }
+    .port-rule-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .port-rule-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .port-rule-title h4 { font-size: 14px; color: #fff; }
+    .port-rule-title p { font-size: 12px; color: #7e7e98; line-height: 1.4; }
+    .port-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .port-badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #292948;
+      color: #a7a7d9;
+    }
+    .port-badge.live { background: #123321; color: #7fe29c; }
+    .port-badge.off { background: #3b2020; color: #ff9c9c; }
+    .port-badge.warn { background: #3b3220; color: #ffd58c; }
+    .port-badge.available { background: #123321; color: #7fe29c; }
+    .port-badge.unavailable { background: #3b2020; color: #ff9c9c; }
+    .diagnostics {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #141423;
+      border: 1px solid #2a2a40;
+    }
+    .diagnostics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .diagnostics-header button {
+      border: 1px solid #2a2a40;
+      background: #1a1a2e;
+      color: #ddd;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .diagnostics-header button:hover {
+      border-color: #7c4dff;
+      color: #fff;
+    }
+    .diagnostics-body {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .diagnostics.expanded .diagnostics-body {
+      display: flex;
+    }
+    .diagnostics-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 0;
+    }
+    .diagnostics-toggle .chevron {
+      display: inline-block;
+      transition: transform 0.18s ease;
+      color: #7c4dff;
+    }
+    .diagnostics.expanded .diagnostics-toggle .chevron {
+      transform: rotate(90deg);
+    }
+    .diagnostics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .diagnostics-item {
+      background: #1a1a2e;
+      border: 1px solid #2a2a40;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .diagnostics-item label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6f6f8e;
+    }
+    .diagnostics-item span {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .diagnostics-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .diagnostic-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid #2a2a40;
+      background: rgba(26, 26, 46, 0.92);
+      font-size: 11px;
+      color: #ddd;
+    }
+    .diagnostic-chip.ok { border-color: #245c3b; color: #8ef0b1; }
+    .diagnostic-chip.warn { border-color: #66501f; color: #ffd58c; }
+    .diagnostic-chip.off { border-color: #6a2b2b; color: #ff9c9c; }
+    .port-rule-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 10px;
+    }
+    .port-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .port-field label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6f6f8e;
+    }
+    .port-field select {
+      background: #0f0f1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      padding: 10px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+    .port-field select:focus { border-color: #7c4dff; }
+    .port-field select option { background: #0f0f1a; color: #e0e0e0; }
+    .port-checks {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .port-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #131320;
+      border: 1px solid #27273e;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #e0e0e0;
+    }
+    .port-check input { accent-color: #7c4dff; }
 
     /* ── Toggle ──────────────────────────────────── */
     .toggle-row {
@@ -210,7 +404,19 @@
     .btn-create:hover { opacity: 0.85; }
 
     /* ── Buttons ──────────────────────────────────── */
-    .button-row { display: flex; gap: 10px; margin-top: 24px; }
+    .button-row {
+      position: fixed;
+      left: 24px;
+      right: 24px;
+      bottom: 78px;
+      display: flex;
+      gap: 10px;
+      z-index: 55;
+      padding: 0;
+    }
+    .button-row .btn {
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+    }
     .btn {
       flex: 1; padding: 12px; border: none; border-radius: 10px;
       font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
@@ -473,6 +679,49 @@
     </div>
   </div>
 
+  <!-- Port Detection -->
+  <div class="section">
+    <div class="section-title">
+      <span>Diagnostics</span>
+      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">collapsed by default</span>
+    </div>
+    <div class="diagnostics" id="diagnosticsPanel">
+      <div class="diagnostics-header">
+        <button class="diagnostics-toggle" id="diagnosticsToggle" type="button" aria-expanded="false">
+          <span class="chevron">›</span>
+          <span>Runtime view</span>
+        </button>
+        <button id="diagnosticsRefresh" type="button">Refresh</button>
+      </div>
+      <div class="diagnostics-body">
+        <div class="diagnostics-grid">
+          <div class="diagnostics-item">
+            <label>Platform</label>
+            <span id="diagPlatform">-</span>
+          </div>
+          <div class="diagnostics-item">
+            <label>Port monitor</label>
+            <span id="diagPortMode">-</span>
+          </div>
+          <div class="diagnostics-item">
+            <label>Accelerometer</label>
+            <span id="diagAccelMode">-</span>
+          </div>
+        </div>
+        <div class="diagnostics-chips" id="diagPortChips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Port Detection -->
+  <div class="section">
+    <div class="section-title">
+      <span>Port Detection</span>
+      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">best effort by OS</span>
+    </div>
+    <div class="port-rules" id="portRulesList"></div>
+  </div>
+
   <!-- Buttons -->
   <div class="button-row">
     <button class="btn btn-test" id="testBtn">Test</button>
@@ -521,7 +770,7 @@
     <div class="support-links">
       <a href="https://github.com/sponsors/adityapatel-00" class="support-link" data-external="https://github.com/sponsors/adityapatel-00">Sponsor</a>
       <a href="https://ko-fi.com/adityapatel_00" class="support-link" data-external="https://ko-fi.com/adityapatel_00">Ko-fi</a>
-      <a href="https://github.com/adityapatel_00/themoaningguy" class="support-link" data-external="https://github.com/adityapatel-00/themoaningguy">Star repo</a>
+      <a href="https://github.com/AdiYd/themoaningguy" class="support-link" data-external="https://github.com/AdiYd/themoaningguy">Star repo</a>
     </div>
   </div>
 
@@ -543,6 +792,11 @@
     const cooldownValue = document.getElementById('cooldownValue');
     const volumeSlider = document.getElementById('volume');
     const volumeValue = document.getElementById('volumeValue');
+    const diagPlatform = document.getElementById('diagPlatform');
+    const diagPortMode = document.getElementById('diagPortMode');
+    const diagAccelMode = document.getElementById('diagAccelMode');
+    const diagPortChips = document.getElementById('diagPortChips');
+    const portRulesList = document.getElementById('portRulesList');
     const bundleList = document.getElementById('bundleList');
     const newBundleName = document.getElementById('newBundleName');
     const createBundleBtn = document.getElementById('createBundleBtn');
@@ -559,6 +813,9 @@
     const supportKoFiBtn = document.getElementById('supportKoFiBtn');
     const supportStarBtn = document.getElementById('supportStarBtn');
     const supportLaterBtn = document.getElementById('supportLaterBtn');
+    const diagnosticsPanel = document.getElementById('diagnosticsPanel');
+    const diagnosticsToggle = document.getElementById('diagnosticsToggle');
+    const diagnosticsRefresh = document.getElementById('diagnosticsRefresh');
     const supportLinks = document.querySelectorAll('[data-external]');
 
     let selectedBundle = null; // loaded from settings
@@ -566,8 +823,12 @@
     let renamingBundle = null;
     let selectedMode = 'accelerometer';
     let accelerometerSupported = false;
+    let portCapabilities = [];
+    let portRules = [];
+    let availableBundles = [];
     let supportPopupTimer = null;
     let supportPromptHidden = false;
+    let runtimeDiagnostics = null;
 
     // ── Sensitivity (inverted slider) ──────────────
     const SENS_MIN = 0.01, SENS_MAX = 0.5;
@@ -585,6 +846,11 @@
       }
 
       window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function setDiagnosticsExpanded(expanded) {
+      diagnosticsPanel.classList.toggle('expanded', expanded);
+      diagnosticsToggle.setAttribute('aria-expanded', String(expanded));
     }
 
     function renderModeSelection() {
@@ -628,7 +894,8 @@
     function scheduleSupportPopup() {
       clearTimeout(supportPopupTimer);
       if (supportPromptHidden) return;
-      supportPopupTimer = setTimeout(openSupportPopup, 3000);
+      const delayMs = 5000 + Math.floor(Math.random() * 5001);
+      supportPopupTimer = setTimeout(openSupportPopup, delayMs);
     }
 
     async function persistSupportPreference() {
@@ -641,10 +908,147 @@
           enabled: enabledToggle.checked,
           detectionMode: selectedMode,
           bundle: selectedBundle,
+          portRules,
           hideSupportPrompt: true,
         },
       });
       setSupportPromptHidden(true);
+    }
+
+    const PORT_KIND_ORDER = [
+      'charging',
+      'usbStorage',
+      'externalDisplay',
+      'ethernet',
+      'thunderboltDock',
+    ];
+
+    function ensurePortRules() {
+      const byKind = new Map((portRules || []).map(rule => [rule.kind, rule]));
+      portRules = PORT_KIND_ORDER.map(kind => byKind.get(kind) || {
+        kind,
+        bundle: availableBundles[0] || 'default',
+        onConnect: false,
+        onDisconnect: false,
+      });
+
+      if (availableBundles.length > 0) {
+        portRules.forEach((rule) => {
+          if (!availableBundles.includes(rule.bundle)) {
+            rule.bundle = availableBundles[0];
+          }
+        });
+      }
+    }
+
+    function bundleOptionsHtml(currentValue) {
+      if (availableBundles.length === 0) {
+        return `<option value="default"${currentValue === 'default' ? ' selected' : ''}>default</option>`;
+      }
+      return availableBundles.map(name => {
+        const selected = name === currentValue ? ' selected' : '';
+        return `<option value="${name}"${selected}>${name}</option>`;
+      }).join('');
+    }
+
+    function portStatusMeta(capability) {
+      if (!capability.supported) {
+        return { label: 'Unavailable', className: 'unavailable' };
+      }
+      return { label: 'Available', className: 'available' };
+    }
+
+    function renderPortRules() {
+      if (!portRulesList) return;
+      ensurePortRules();
+
+      const capabilityMap = new Map(portCapabilities.map(item => [item.kind, item]));
+      portRulesList.innerHTML = '';
+
+      portRules.forEach((rule) => {
+        const capability = capabilityMap.get(rule.kind) || {
+          kind: rule.kind,
+          label: rule.kind,
+          supported: false,
+          connected: false,
+        };
+        const status = portStatusMeta(capability);
+
+        const card = document.createElement('div');
+        card.className = 'port-rule';
+        card.innerHTML = `
+          <div class="port-rule-top">
+            <div class="port-rule-title">
+              <h4>${capability.label}</h4>
+            </div>
+            <div class="port-badges">
+              <span class="port-badge ${status.className}">${status.label}</span>
+            </div>
+          </div>
+          <div class="port-rule-grid">
+            <div class="port-field">
+              <label>Audio pack</label>
+              <select data-port-bundle="${rule.kind}">
+                ${bundleOptionsHtml(rule.bundle)}
+              </select>
+            </div>
+            <div class="port-field">
+              <label>Triggers</label>
+              <div class="port-checks">
+                <label class="port-check">
+                  <input type="checkbox" ${rule.onConnect ? 'checked' : ''} data-port-connect="${rule.kind}" />
+                  Connect
+                </label>
+                <label class="port-check">
+                  <input type="checkbox" ${rule.onDisconnect ? 'checked' : ''} data-port-disconnect="${rule.kind}" />
+                  Removal
+                </label>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const bundleSelect = card.querySelector(`[data-port-bundle="${rule.kind}"]`);
+        bundleSelect.addEventListener('change', (e) => {
+          rule.bundle = e.target.value;
+        });
+
+        const connectToggle = card.querySelector(`[data-port-connect="${rule.kind}"]`);
+        connectToggle.addEventListener('change', (e) => {
+          rule.onConnect = e.target.checked;
+        });
+
+        const disconnectToggle = card.querySelector(`[data-port-disconnect="${rule.kind}"]`);
+        disconnectToggle.addEventListener('change', (e) => {
+          rule.onDisconnect = e.target.checked;
+        });
+
+        portRulesList.appendChild(card);
+      });
+    }
+
+    function portChipClass(capability) {
+      if (!capability.supported) return 'off';
+      return capability.connected ? 'ok' : 'warn';
+    }
+
+    function renderDiagnostics() {
+      if (!runtimeDiagnostics) return;
+
+      diagPlatform.textContent = runtimeDiagnostics.platform || '-';
+      diagPortMode.textContent = runtimeDiagnostics.portMonitorMode || '-';
+      diagAccelMode.textContent = runtimeDiagnostics.accelerometerAvailable
+        ? 'Available'
+        : 'Fallback only';
+
+      const ports = Array.isArray(runtimeDiagnostics.ports) ? runtimeDiagnostics.ports : [];
+      diagPortChips.innerHTML = ports.map((port) => {
+        const className = portChipClass(port);
+        const stateText = port.supported
+          ? (port.connected ? 'Detected' : 'Not active')
+          : 'Unavailable';
+        return `<span class="diagnostic-chip ${className}">${port.label}: ${stateText}</span>`;
+      }).join('');
     }
 
     sensitivitySlider.addEventListener('input', () => {
@@ -676,7 +1080,7 @@
     });
     supportStarBtn.addEventListener('click', async () => {
       await persistSupportPreference();
-      await openExternal('https://github.com/adityapatel-00/themoaningguy');
+      await openExternal('https://github.com/AdiYd/themoaningguy');
     });
     supportLaterBtn.addEventListener('click', async () => {
       await persistSupportPreference();
@@ -700,6 +1104,11 @@
     // ── Bundle List ─────────────────────────────────
     async function loadBundles() {
       const bundles = await invoke('list_bundles');
+      availableBundles = bundles.map(b => b.name);
+      if (selectedBundle && !availableBundles.includes(selectedBundle)) {
+        selectedBundle = availableBundles[0] || '';
+      }
+      ensurePortRules();
       bundleList.innerHTML = '';
 
       for (const b of bundles) {
@@ -800,6 +1209,8 @@
           bundleList.appendChild(panel);
         }
       }
+
+      renderPortRules();
     }
 
     // ── Create Bundle ───────────────────────────────
@@ -877,9 +1288,11 @@
 
     // ── Load Settings ───────────────────────────────
     async function loadSettings() {
-      const [s, capabilities] = await Promise.all([
+      const [s, detectorCaps, portCaps, diagnostics] = await Promise.all([
         invoke('get_settings'),
         invoke('get_detector_capabilities'),
+        invoke('get_port_capabilities'),
+        invoke('get_runtime_diagnostics'),
       ]);
       enabledToggle.checked = s.enabled;
       sensitivitySlider.value = sliderFromThreshold(s.sensitivity);
@@ -890,11 +1303,26 @@
       volumeValue.textContent = Math.round(s.volume * 100) + '%';
       selectedBundle = s.bundle;
       selectedMode = s.detectionMode || 'microphone';
-      accelerometerSupported = !!capabilities.accelerometerAvailable;
+      accelerometerSupported = !!detectorCaps.accelerometerAvailable;
+      portCapabilities = Array.isArray(portCaps.ports) ? portCaps.ports : [];
+      portRules = Array.isArray(s.portRules) ? s.portRules : [];
+      runtimeDiagnostics = diagnostics || null;
       supportPromptHidden = !!s.hideSupportPrompt;
       supportNeverShow.checked = supportPromptHidden;
       renderModeSelection();
+      renderPortRules();
+      renderDiagnostics();
     }
+
+    diagnosticsToggle.addEventListener('click', () => {
+      setDiagnosticsExpanded(!diagnosticsPanel.classList.contains('expanded'));
+    });
+
+    diagnosticsRefresh.addEventListener('click', async () => {
+      runtimeDiagnostics = await invoke('get_runtime_diagnostics');
+      renderDiagnostics();
+      showToast('Diagnostics refreshed');
+    });
 
     // ── Save ────────────────────────────────────────
     saveBtn.addEventListener('click', async () => {
@@ -906,6 +1334,7 @@
           enabled: enabledToggle.checked,
           detectionMode: selectedMode,
           bundle: selectedBundle,
+          portRules,
           hideSupportPrompt: supportNeverShow.checked,
         },
       });
@@ -935,6 +1364,7 @@
 
     // ── Init ────────────────────────────────────────
     loadSettings().then(() => {
+      setDiagnosticsExpanded(false);
       loadBundles();
       scheduleSupportPopup();
     });

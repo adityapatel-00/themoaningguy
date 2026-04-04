@@ -11,9 +11,36 @@ cpal = "0.15"
 rodio = "0.20"
 rand = "0.8"
 hidapi = "2"
+battery = "0.7"
+display-info = "0.5"
+rusb = "0.9"
+sysinfo = "0.38"
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-single-instance = "2"
+
+[target.'cfg(windows)'.dependencies]
+wmi = "0.18"
+windows-sys = { version = "0.59", features = [
+    "Win32_System_Power",
+    "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
+    "Win32_System_SystemServices",
+    "Win32_System_Ioctl",
+    "Win32_Security",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Devices_Usb",
+    "Win32_Devices_Display",
+    "Win32_NetworkManagement_Ndis",
+] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+udev = "0.9"
+libc = "0.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-core-foundation = "0.3"
+objc2-io-kit = { version = "0.3", features = ["libc"] }
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

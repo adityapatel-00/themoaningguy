@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use tauri::Manager as _;
 
 use crate::detector::DetectionMode;
+use crate::ports::{repair_rules, PortKind, PortRule};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -15,6 +16,7 @@ pub struct Settings {
     pub enabled: bool,
     pub detection_mode: DetectionMode,
     pub bundle: String,
+    pub port_rules: Vec<PortRule>,
     pub hide_support_prompt: bool,
 }
 
@@ -27,6 +29,10 @@ impl Default for Settings {
             enabled: true,
             detection_mode: DetectionMode::Microphone,
             bundle: "default".to_string(),
+            port_rules: PortKind::all()
+                .into_iter()
+                .map(PortRule::default_for)
+                .collect(),
             hide_support_prompt: false,
         }
     }
@@ -68,5 +74,7 @@ impl Settings {
         ) {
             self.detection_mode = DetectionMode::Microphone;
         }
+
+        repair_rules(&mut self.port_rules);
     }
 }

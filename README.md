@@ -37,6 +37,7 @@ Mic Input → Amplitude Analysis → Spike Detection → Sound Playback
 - **No overlap** — new trigger stops the previous sound
 - **Accelerometer mode** — use supported sensor hardware for tighter slap detection
 - **Microphone fallback** — works on devices without a motion sensor
+- **Port rules** — trigger bundles on charging, USB storage, external display, Ethernet, and dock events
 - **Adjustable sensitivity** — tune it for your environment
 - **Cooldown timer** — prevent rapid-fire triggers
 
@@ -129,10 +130,24 @@ Produces platform-specific installers in `src-tauri/target/release/bundle/`.
 2. Right-click the tray icon → **Settings**
 3. Create a **sound bundle** and import your audio files (wav, mp3, ogg, flac)
 4. Pick **Accelerometer** or **Microphone** mode when available
-5. Adjust **sensitivity**, **cooldown**, and **volume**
-6. Save — then slap your laptop
+5. Configure **Port Detection** rules for connect/remove events
+6. Adjust **sensitivity**, **cooldown**, and **volume**
+7. Save — then slap your laptop
 
 The settings screen also includes a small support prompt and footer links for GitHub Sponsors, Ko-fi, and starring the repo.
+
+## Safety & Limitations
+
+- Detection is best-effort and may produce false positives or miss some events.
+- Port detection depends on what the operating system exposes on the current device.
+- Microphone mode uses the active input device while the app is running.
+- Accelerometer mode, when available, depends on supported sensor hardware and drivers.
+- Background monitoring uses some CPU and battery, especially in microphone mode.
+- Use the app responsibly on sensitive, shared, or production machines.
+
+## Disclaimer
+
+This software is provided "as is", without warranty of any kind. The author is not responsible for any damage, data loss, hardware issues, or unintended behavior that may result from using the app.
 
 ## Adding Sounds
 

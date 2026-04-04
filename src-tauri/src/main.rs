@@ -3,9 +3,14 @@
 
 mod detector;
 mod player;
+mod ports;
 mod settings;
 
 use detector::{accelerometer_available, DetectorHandle};
+use ports::{
+    platform_label, port_monitor_mode_label, probe_port_capabilities, update_rule_bundle,
+    PortMonitorHandle,
+};
 use player::{BundleInfo, PlayerHandle, SoundInfo};
 use settings::Settings;
 
@@ -20,6 +25,7 @@ use tauri::{
 struct AppState {
     settings: Arc<Mutex<Settings>>,
     detector: DetectorHandle,
+    _port_monitor: PortMonitorHandle,
     player: Arc<PlayerHandle>,
 }
 
@@ -27,6 +33,21 @@ struct AppState {
 #[serde(rename_all = "camelCase")]
 struct DetectorCapabilities {
     accelerometer_available: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PortCapabilitiesResponse {
+    ports: Vec<ports::PortCapability>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RuntimeDiagnostics {
+    platform: String,
+    port_monitor_mode: String,
+    accelerometer_available: bool,
+    ports: Vec<ports::PortCapability>,
 }
 
 // ── Settings Commands ───────────────────────────────────────────────
@@ -96,6 +117,23 @@ fn get_detector_capabilities() -> DetectorCapabilities {
     }
 }
 
+#[tauri::command]
+fn get_port_capabilities() -> PortCapabilitiesResponse {
+    PortCapabilitiesResponse {
+        ports: probe_port_capabilities(),
+    }
+}
+
+#[tauri::command]
+fn get_runtime_diagnostics() -> RuntimeDiagnostics {
+    RuntimeDiagnostics {
+        platform: platform_label().to_string(),
+        port_monitor_mode: port_monitor_mode_label().to_string(),
+        accelerometer_available: accelerometer_available(),
+        ports: probe_port_capabilities(),
+    }
+}
+
 // ── Bundle Commands ─────────────────────────────────────────────────
 
 #[tauri::command]
@@ -109,17 +147,58 @@ fn create_bundle(state: tauri::State<'_, AppState>, name: String) -> Result<(), 
 }
 
 #[tauri::command]
-fn delete_bundle(state: tauri::State<'_, AppState>, name: String) -> Result<(), String> {
-    state.player.delete_bundle(&name)
+fn delete_bundle(
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    name: String,
+) -> Result<(), String> {
+    state.player.delete_bundle(&name)?;
+
+    let available = state.player.list_bundles();
+    let fallback = available
+        .first()
+        .map(|bundle| bundle.name.clone())
+        .unwrap_or_else(|| "default".to_string());
+
+    let mut settings = state.settings.lock().unwrap();
+    if settings.bundle == name {
+        settings.bundle = fallback.clone();
+    }
+    for rule in settings.port_rules.iter_mut() {
+        if rule.bundle == name {
+            rule.bundle = fallback.clone();
+        }
+    }
+    settings.validate();
+    settings.save(&app_handle);
+    let snapshot = settings.clone();
+    drop(settings);
+    app_handle.emit("settings-changed", &snapshot).ok();
+
+    Ok(())
 }
 
 #[tauri::command]
 fn rename_bundle(
     state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
     old_name: String,
     new_name: String,
 ) -> Result<(), String> {
-    state.player.rename_bundle(&old_name, &new_name)
+    state.player.rename_bundle(&old_name, &new_name)?;
+
+    let mut settings = state.settings.lock().unwrap();
+    if settings.bundle == old_name {
+      settings.bundle = new_name.clone();
+    }
+    update_rule_bundle(&mut settings.port_rules, &old_name, &new_name);
+    settings.validate();
+    settings.save(&app_handle);
+    let snapshot = settings.clone();
+    drop(settings);
+    app_handle.emit("settings-changed", &snapshot).ok();
+
+    Ok(())
 }
 
 // ── Sound File Commands ─────────────────────────────────────────────
@@ -179,6 +258,23 @@ fn main() {
                 player_ref.play(&s.bundle, s.volume, intensity);
             });
 
+            let player_ref = player.clone();
+            let settings_ref = shared_settings.clone();
+            let port_monitor = PortMonitorHandle::spawn(move |kind, connected| {
+                let s = settings_ref.lock().unwrap();
+                if let Some(rule) = s.port_rules.iter().find(|rule| rule.kind == kind) {
+                    let should_fire = if connected {
+                        rule.on_connect
+                    } else {
+                        rule.on_disconnect
+                    };
+
+                    if should_fire && !rule.bundle.is_empty() {
+                        player_ref.play(&rule.bundle, s.volume, 0.9);
+                    }
+                }
+            });
+
             if settings.enabled {
                 detector.start(
                     settings.detection_mode,
@@ -190,6 +286,7 @@ fn main() {
             app.manage(AppState {
                 settings: shared_settings,
                 detector,
+                _port_monitor: port_monitor,
                 player,
             });
 
@@ -269,6 +366,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_settings,
             get_detector_capabilities,
+            get_port_capabilities,
+            get_runtime_diagnostics,
             save_settings,
             toggle_enabled,
             test_sound,
