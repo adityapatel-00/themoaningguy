@@ -227,13 +227,23 @@ fn discover_accel_backend() -> Option<AccelBackend> {
     Some(AccelBackend::GenericHid(device))
 }
 
-fn read_backend_sample(backend: &AccelBackend) -> Option<[f32; 3]> {
+struct AccelReading {
+    sample: [f32; 3],
+    /// Pre-computed peak inter-sample delta from a high-frequency buffer
+    /// (Apple Silicon IMU at 800 Hz).  0.0 means the caller should compute
+    /// the delta from its own `last_sample`.
+    peak_motion: f32,
+}
+
+fn read_backend_sample(backend: &AccelBackend) -> Option<AccelReading> {
     match backend {
-        AccelBackend::GenericHid(device) => read_sensor_sample(device),
+        AccelBackend::GenericHid(device) => read_sensor_sample(device)
+            .map(|s| AccelReading { sample: s, peak_motion: 0.0 }),
         #[cfg(target_os = "macos")]
-        AccelBackend::AppleSilicon(device) => read_apple_silicon_sample(device),
+        AccelBackend::AppleSilicon(device) => read_apple_silicon_reading(device),
         #[cfg(target_os = "linux")]
-        AccelBackend::LinuxIio(sensor) => read_iio_sample(sensor),
+        AccelBackend::LinuxIio(sensor) => read_iio_sample(sensor)
+            .map(|s| AccelReading { sample: s, peak_motion: 0.0 }),
     }
 }
 
@@ -274,24 +284,33 @@ fn discover_apple_silicon_sensor(api: &HidApi) -> Option<HidDevice> {
 }
 
 #[cfg(target_os = "macos")]
-fn read_apple_silicon_sample(device: &HidDevice) -> Option<[f32; 3]> {
+fn read_apple_silicon_reading(device: &HidDevice) -> Option<AccelReading> {
     let mut buf = [0u8; 64];
-    let mut latest = None;
+    let mut prev: Option<[f32; 3]> = None;
+    let mut latest: Option<[f32; 3]> = None;
+    let mut peak_motion: f32 = 0.0;
 
-    // The IMU runs at ~800 Hz.  Drain buffered reports so we always use the
-    // freshest sample.  First call blocks briefly; subsequent calls are
-    // non-blocking.
-    for i in 0..64u32 {
+    // The IMU runs at ~800 Hz → ~13 reports per 16 ms polling interval.
+    // Process ALL buffered reports and track the maximum inter-sample
+    // delta.  A slap lasting <10 ms is captured in the 800 Hz data even
+    // if it falls entirely between two 16 ms polling points.
+    for i in 0..128u32 {
         let timeout = if i == 0 && latest.is_none() { 50 } else { 0 };
         match device.read_timeout(&mut buf, timeout) {
             Ok(len) if len >= 18 => {
-                latest = decode_apple_silicon_report(&buf[..len]);
+                if let Some(sample) = decode_apple_silicon_report(&buf[..len]) {
+                    if let Some(p) = prev {
+                        peak_motion = peak_motion.max(vector_delta(p, sample));
+                    }
+                    prev = Some(sample);
+                    latest = Some(sample);
+                }
             }
             _ => break,
         }
     }
 
-    latest
+    latest.map(|sample| AccelReading { sample, peak_motion })
 }
 
 #[cfg(target_os = "macos")]
@@ -503,25 +522,28 @@ fn run_accelerometer_loop(
     let backend = discover_accel_backend()
         .ok_or_else(|| "No compatible accelerometer or motion sensor found".to_string())?;
 
-    // STA/LTA (Short-Term Average / Long-Term Average) — standard seismology
-    // technique for impulsive event detection.
-    let mut sta: f32 = 0.0; // fast-responding (~3 samples)
-    let mut lta: f32 = 0.0; // slow-responding (~200 samples)
-    let mut last_sample: Option<[f32; 3]> = None;
+    // ── High-pass filter (same as spank) ──────────────────────────────
+    // Single-pole IIR, α = 0.95, cutoff ≈ 0.8 Hz at 62.5 Hz polling.
+    // Strips the constant gravity vector so only dynamic acceleration
+    // (slaps, bumps) remains.  Without this, slowly tilting the laptop
+    // rotates the gravity vector and floods the STA/LTA baseline.
+    const HP_ALPHA: f32 = 0.95;
+    let mut hp_prev_raw = [0.0f32; 3];
+    let mut hp_prev_out = [0.0f32; 3];
+    let mut hp_initialized = false;
+
+    // ── STA/LTA (Short-Term Average / Long-Term Average) ──────────────
+    let mut sta: f32 = 0.0;
+    let mut lta: f32 = 0.0;
     let mut last_trigger = Instant::now() - Duration::from_secs(10);
     let mut warmup_count: u32 = 0;
 
-    const WARMUP_SAMPLES: u32 = 30; // ~500 ms at 16 ms polling
+    const WARMUP_SAMPLES: u32 = 30;
     const STA_ALPHA: f32 = 0.3;
     const LTA_ALPHA: f32 = 0.005;
     const STA_LTA_RATIO: f32 = 5.0;
 
-    // Map the mic-oriented threshold (0.01–0.5 RMS) to an accelerometer
-    // motion threshold (g).  Low sensitivity → high threshold → need a
-    // hard slap.  High sensitivity → low threshold → light taps trigger.
-    //   threshold 0.50 (least sensitive) → 0.30 g
-    //   threshold 0.15 (default)         → 0.10 g
-    //   threshold 0.01 (most sensitive)  → 0.04 g
+    // Map mic threshold (0.01–0.5 RMS) → accelerometer threshold (g).
     let accel_threshold = (threshold * 0.6).clamp(0.04, 0.30);
 
     loop {
@@ -529,35 +551,56 @@ fn run_accelerometer_loop(
             break;
         }
 
-        if let Some(sample) = read_backend_sample(&backend) {
-            if let Some(prev) = last_sample {
-                let motion = vector_delta(prev, sample);
-
-                sta = sta * (1.0 - STA_ALPHA) + motion * STA_ALPHA;
-                lta = lta * (1.0 - LTA_ALPHA) + motion * LTA_ALPHA;
-
-                warmup_count = warmup_count.saturating_add(1);
-                if warmup_count < WARMUP_SAMPLES {
-                    lta = lta.max(motion * 0.5);
-                    last_sample = Some(sample);
-                    thread::sleep(Duration::from_millis(16));
-                    continue;
-                }
-
-                let ratio = if lta > 0.001 { sta / lta } else { 0.0 };
-
-                if ratio > STA_LTA_RATIO && motion >= accel_threshold {
-                    let now = Instant::now();
-                    let elapsed = now.duration_since(last_trigger).as_millis() as u64;
-                    if elapsed >= cooldown_ms {
-                        last_trigger = now;
-                        let intensity = (motion / 0.35).clamp(0.15, 1.0);
-                        on_slap(intensity);
-                    }
-                }
+        if let Some(reading) = read_backend_sample(&backend) {
+            // ── Apply high-pass filter to remove gravity ──────────
+            if !hp_initialized {
+                hp_prev_raw = reading.sample;
+                hp_prev_out = [0.0; 3];
+                hp_initialized = true;
+                thread::sleep(Duration::from_millis(16));
+                continue;
             }
 
-            last_sample = Some(sample);
+            let filtered = [
+                HP_ALPHA * (hp_prev_out[0] + reading.sample[0] - hp_prev_raw[0]),
+                HP_ALPHA * (hp_prev_out[1] + reading.sample[1] - hp_prev_raw[1]),
+                HP_ALPHA * (hp_prev_out[2] + reading.sample[2] - hp_prev_raw[2]),
+            ];
+            hp_prev_raw = reading.sample;
+            hp_prev_out = filtered;
+
+            // Filtered magnitude = dynamic acceleration only (no gravity).
+            let filtered_mag = (filtered[0] * filtered[0]
+                + filtered[1] * filtered[1]
+                + filtered[2] * filtered[2])
+            .sqrt();
+
+            // For Apple Silicon, also consider the 800 Hz peak delta
+            // which catches sub-16ms slaps the polling-rate filter misses.
+            let motion = reading.peak_motion.max(filtered_mag);
+
+            // ── STA/LTA ──────────────────────────────────────────
+            sta = sta * (1.0 - STA_ALPHA) + motion * STA_ALPHA;
+            lta = lta * (1.0 - LTA_ALPHA) + motion * LTA_ALPHA;
+
+            warmup_count = warmup_count.saturating_add(1);
+            if warmup_count < WARMUP_SAMPLES {
+                lta = lta.max(motion * 0.5);
+                thread::sleep(Duration::from_millis(16));
+                continue;
+            }
+
+            let ratio = if lta > 0.001 { sta / lta } else { 0.0 };
+
+            if ratio > STA_LTA_RATIO && motion >= accel_threshold {
+                let now = Instant::now();
+                let elapsed = now.duration_since(last_trigger).as_millis() as u64;
+                if elapsed >= cooldown_ms {
+                    last_trigger = now;
+                    let intensity = (motion / 0.35).clamp(0.15, 1.0);
+                    on_slap(intensity);
+                }
+            }
         }
 
         thread::sleep(Duration::from_millis(16));
