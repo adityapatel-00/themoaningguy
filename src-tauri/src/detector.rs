@@ -270,7 +270,7 @@ fn read_backend_sample(backend: &AccelBackend) -> Option<AccelReading> {
 #[cfg(target_os = "macos")]
 mod apple_spu {
     use super::AccelReading;
-    use std::ffi::{c_char, c_int, c_void, CStr};
+    use std::ffi::{c_char, c_void};
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
@@ -439,11 +439,12 @@ mod apple_spu {
             loop {
                 let svc = IOIteratorNext(iter);
                 if svc == 0 { break; }
-                for (key, val) in [
-                    (b"SensorPropertyReportingState\0", 1i32),
-                    (b"SensorPropertyPowerState\0", 1i32),
-                    (b"ReportInterval\0", 1000i32),
-                ] {
+                let props: &[(&[u8], i32)] = &[
+                    (b"SensorPropertyReportingState\0", 1),
+                    (b"SensorPropertyPowerState\0", 1),
+                    (b"ReportInterval\0", 1000),
+                ];
+                for &(key, val) in props {
                     let k = cfstr(key);
                     let v = cfnum32(val);
                     IORegistryEntrySetCFProperty(svc, k, v as CFTypeRef);
