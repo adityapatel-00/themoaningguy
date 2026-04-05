@@ -261,21 +261,52 @@ fn read_backend_sample(backend: &AccelBackend) -> Option<AccelReading> {
 #[cfg(target_os = "macos")]
 fn discover_apple_silicon_sensor(api: &HidApi) -> Option<HidDevice> {
     for info in api.device_list() {
-        if info.usage_page() != 0xFF00 || info.usage() != 3 {
+        if info.usage_page() != 0xFF00 {
             continue;
         }
 
+        let product = info.product_string().unwrap_or("?");
+        let usage = info.usage();
+        eprintln!(
+            "[accel] candidate: usage_page=0xFF00 usage={} product={:?}",
+            usage, product
+        );
+
         let device = match info.open_device(api) {
             Ok(d) => d,
-            Err(_) => continue,
+            Err(e) => {
+                eprintln!("[accel]   open failed: {}", e);
+                continue;
+            }
         };
 
-        // Read one report to validate the device actually provides accel data.
-        if let Some(reading) = read_apple_silicon_reading(&device) {
-            let sample = reading.sample;
-            let mag =
-                (sample[0] * sample[0] + sample[1] * sample[1] + sample[2] * sample[2]).sqrt();
-            if mag > 0.5 && mag < 3.0 {
+        // Read two reports and verify:
+        // 1. Magnitude near 1g (real accelerometer at rest)
+        // 2. Values actually change (real sensor has jitter, a static
+        //    device returns the exact same bytes every time)
+        let r1 = read_apple_silicon_reading(&device);
+        // Small delay to let the sensor buffer a new report
+        std::thread::sleep(Duration::from_millis(20));
+        let r2 = read_apple_silicon_reading(&device);
+
+        if let (Some(r1), Some(r2)) = (r1, r2) {
+            let mag = (r1.sample[0] * r1.sample[0]
+                + r1.sample[1] * r1.sample[1]
+                + r1.sample[2] * r1.sample[2])
+            .sqrt();
+
+            let changed = r1.sample[0] != r2.sample[0]
+                || r1.sample[1] != r2.sample[1]
+                || r1.sample[2] != r2.sample[2];
+
+            eprintln!(
+                "[accel]   mag={:.3}g changed={} sample={:.4},{:.4},{:.4}",
+                mag, changed, r1.sample[0], r1.sample[1], r1.sample[2]
+            );
+
+            // Real accelerometer: ~1g at rest, values jitter slightly.
+            if mag > 0.7 && mag < 1.5 && changed {
+                eprintln!("[accel]   ACCEPTED as accelerometer");
                 return Some(device);
             }
         }
