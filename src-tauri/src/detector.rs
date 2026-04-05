@@ -271,7 +271,8 @@ fn discover_apple_silicon_sensor(api: &HidApi) -> Option<HidDevice> {
         };
 
         // Read one report to validate the device actually provides accel data.
-        if let Some(sample) = read_apple_silicon_sample(&device) {
+        if let Some(reading) = read_apple_silicon_reading(&device) {
+            let sample = reading.sample;
             let mag =
                 (sample[0] * sample[0] + sample[1] * sample[1] + sample[2] * sample[2]).sqrt();
             if mag > 0.5 && mag < 3.0 {
