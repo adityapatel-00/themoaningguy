@@ -961,7 +961,7 @@
       if (accelerometerSupported) {
         modeStatus.textContent = 'Accelerometer detected on this device.';
       } else {
-        modeStatus.textContent = 'No compatible sensor found, so microphone mode is the safe fallback.';
+        modeStatus.textContent = 'No sensor detected. Microphone mode works great for slap detection.';
       }
 
       if (!accelerometerSupported && selectedMode === 'accelerometer') {
@@ -1034,13 +1034,18 @@
       }
     }
 
+    function escapeAttr(str) {
+      return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
     function bundleOptionsHtml(currentValue) {
       if (availableBundles.length === 0) {
         return `<option value="" selected>No bundle selected</option>`;
       }
       return availableBundles.map(name => {
         const selected = name === currentValue ? ' selected' : '';
-        return `<option value="${name}"${selected}>${name}</option>`;
+        const safe = escapeAttr(name);
+        return `<option value="${safe}"${selected}>${safe}</option>`;
       }).join('');
     }
 
@@ -1226,14 +1231,16 @@
         item.className = 'bundle-item' + (isActive ? ' active' : '') + (isExpanded ? ' expanded' : '');
         item.innerHTML = `
           <div class="bundle-left">
-            <span class="bundle-name">${b.name}</span>
-            <span class="bundle-count">${b.count} sound${b.count !== 1 ? 's' : ''}</span>
+            <span class="bundle-name"></span>
+            <span class="bundle-count"></span>
           </div>
           <div class="bundle-actions">
             <button class="rename-btn" title="Rename">&#9998;</button>
             <button class="delete-btn" title="Delete">&times;</button>
           </div>
         `;
+        item.querySelector('.bundle-name').textContent = b.name;
+        item.querySelector('.bundle-count').textContent = `${b.count} sound${b.count !== 1 ? 's' : ''}`;
 
         // Click to select + toggle expand
         item.addEventListener('click', (e) => {
@@ -1279,9 +1286,10 @@
               const si = document.createElement('div');
               si.className = 'sound-item';
               si.innerHTML = `
-                <span class="sound-name">${s.name}</span>
+                <span class="sound-name"></span>
                 <button class="sound-remove" title="Remove">&times;</button>
               `;
+              si.querySelector('.sound-name').textContent = s.name;
               si.querySelector('.sound-remove').addEventListener('click', async () => {
                 await invoke('remove_sound', { bundle: b.name, filename: s.name });
                 loadBundles();

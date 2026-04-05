@@ -749,6 +749,13 @@ fn poll_charging() -> Option<bool> {
 
     #[cfg(all(not(windows), not(target_os = "macos")))]
     {
+        // Prefer direct sysfs — more reliable than the battery crate on many
+        // laptops (avoids ENODEV, non-UTF-8, and state-toggling edge cases).
+        if let Some(charging) = poll_charging_linux_sysfs() {
+            return Some(charging);
+        }
+
+        // Fall back to battery crate.
         let manager = Manager::new().ok()?;
         let batteries = manager.batteries().ok()?;
 
@@ -756,7 +763,10 @@ fn poll_charging() -> Option<bool> {
         let mut charging = false;
 
         for maybe_battery in batteries {
-            let battery = maybe_battery.ok()?;
+            let battery = match maybe_battery {
+                Ok(b) => b,
+                Err(_) => continue,
+            };
             saw_battery = true;
 
             match battery.state() {
@@ -776,6 +786,27 @@ fn poll_charging() -> Option<bool> {
     }
 }
 
+/// Read AC adapter online status directly from sysfs — the most reliable
+/// charging indicator on Linux.  Looks for power supplies with type "Mains"
+/// and reads their "online" attribute (1 = AC connected).
+#[cfg(all(not(windows), not(target_os = "macos")))]
+fn poll_charging_linux_sysfs() -> Option<bool> {
+    let power_supply = std::path::Path::new("/sys/class/power_supply");
+    let entries = std::fs::read_dir(power_supply).ok()?;
+    for entry in entries.filter_map(|e| e.ok()) {
+        let type_path = entry.path().join("type");
+        if let Ok(psu_type) = std::fs::read_to_string(&type_path) {
+            if psu_type.trim() == "Mains" {
+                let online_path = entry.path().join("online");
+                if let Ok(online) = std::fs::read_to_string(&online_path) {
+                    return Some(online.trim() == "1");
+                }
+            }
+        }
+    }
+    None
+}
+
 fn poll_usb_storage() -> Option<bool> {
     #[cfg(windows)]
     {
@@ -791,7 +822,10 @@ fn poll_usb_storage() -> Option<bool> {
     {
         let devices = rusb::devices().ok()?;
         for device in devices.iter() {
-            let descriptor = device.device_descriptor().ok()?;
+            let descriptor = match device.device_descriptor() {
+                Ok(d) => d,
+                Err(_) => continue, // skip this device, check others
+            };
             if descriptor.class_code() == 0x08 {
                 return Some(true);
             }
@@ -834,9 +868,12 @@ fn poll_ethernet() -> Option<bool> {
         let networks = Networks::new_with_refreshed_list();
         let connected = networks.iter().any(|(name, data)| {
             let name = name.to_lowercase();
-            let wired_hint = ["eth", "ethernet", "lan", "en"]
-                .iter()
-                .any(|needle| name.contains(needle));
+            // Use starts_with for predictable naming (enp*, eth*) to avoid
+            // false matches on names that incidentally contain "en".
+            let wired_hint = name.starts_with("eth")
+                || name.starts_with("en")
+                || name.contains("ethernet")
+                || name.contains("lan");
             let wireless_hint = ["wifi", "wi-fi", "wlan", "airport", "wireless"]
                 .iter()
                 .any(|needle| name.contains(needle));
@@ -887,6 +924,17 @@ fn spawn_macos_monitor_loop(
         unsafe {
             drop(Box::from_raw(event_tx_ptr as *mut mpsc::Sender<()>));
             IONotificationPort::destroy(notify_port);
+        }
+        // Fall back to polling instead of silently exiting.
+        let mut previous = poll_port_snapshot();
+        loop {
+            if stop_rx.try_recv().is_ok() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_secs(2));
+            let current = poll_port_snapshot();
+            emit_changes(previous, current, on_event.clone());
+            previous = current;
         }
         return;
     };
@@ -1248,14 +1296,14 @@ fn poll_thunderbolt_dock_windows() -> Option<bool> {
         let caption = device.caption.as_deref().unwrap_or("").to_lowercase();
         let pnp = device.pnp_device_id.as_deref().unwrap_or("").to_lowercase();
 
+        // Removed "dell" and "lenovo" — they are laptop OEMs whose internal
+        // components (BIOS, EC, trackpad controllers) would always match.
         [
             "thunderbolt",
             "dock",
             "caldigit",
             "anker",
             "belkin",
-            "dell",
-            "lenovo",
             "satechi",
             "j5create",
             "ugreen",
@@ -1334,9 +1382,8 @@ fn is_probably_thunderbolt_or_dock<T: UsbContext>(device: &rusb::Device<T>) -> b
         Err(_) => return false,
     };
 
-    if matches!(descriptor.class_code(), 0x09 | 0xef) {
-        return true;
-    }
+    // Don't match USB class 0x09 (hub) — internal USB hubs are present on
+    // virtually every laptop and cause false positives.
 
     let handle = match device.open() {
         Ok(handle) => handle,
@@ -1366,14 +1413,15 @@ fn is_probably_thunderbolt_or_dock<T: UsbContext>(device: &rusb::Device<T>) -> b
         fields.push(manufacturer.to_lowercase());
     }
 
+    // Only match dock-specific brands and thunderbolt/dock keywords.
+    // Removed "dell" and "lenovo" — they are laptop manufacturers whose
+    // built-in components would always match on their own laptops.
     [
         "thunderbolt",
         "dock",
         "caldigit",
         "anker",
         "belkin",
-        "dell",
-        "lenovo",
         "satechi",
         "j5create",
         "ugreen",

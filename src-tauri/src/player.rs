@@ -55,7 +55,7 @@ impl PlayerHandle {
                         // Reset bag if bundle changed or bag exhausted or files changed
                         if cmd.bundle != bag_bundle || bag_index >= bag.len() || bag.len() != files.len() {
                             bag = files;
-                            bag.shuffle(&mut rand::thread_rng());
+                            bag.shuffle(&mut rand::rng());
                             bag_index = 0;
                             bag_bundle = cmd.bundle.clone();
                         }
@@ -136,6 +136,7 @@ impl PlayerHandle {
     }
 
     pub fn create_bundle(&self, name: &str) -> Result<(), String> {
+        validate_bundle_name(name)?;
         let dir = self.sounds_dir.join(name);
         if dir.exists() {
             return Err(format!("Bundle '{}' already exists", name));
@@ -152,6 +153,7 @@ impl PlayerHandle {
     }
 
     pub fn rename_bundle(&self, old: &str, new: &str) -> Result<(), String> {
+        validate_bundle_name(new)?;
         let old_dir = self.sounds_dir.join(old);
         let new_dir = self.sounds_dir.join(new);
         if !old_dir.exists() {
@@ -214,7 +216,21 @@ pub struct SoundInfo {
     pub name: String,
 }
 
-fn list_sounds(dir: &PathBuf) -> Vec<PathBuf> {
+/// Reject names that could cause path traversal or contain unsafe characters.
+fn validate_bundle_name(name: &str) -> Result<(), String> {
+    if name.is_empty() || name.len() > 50 {
+        return Err("Bundle name must be 1-50 characters".to_string());
+    }
+    let valid = name
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == ' ' || c == '_' || c == '-');
+    if !valid {
+        return Err("Bundle name contains invalid characters".to_string());
+    }
+    Ok(())
+}
+
+fn list_sounds(dir: &std::path::Path) -> Vec<PathBuf> {
     match fs::read_dir(dir) {
         Ok(entries) => entries
             .filter_map(|e| e.ok())

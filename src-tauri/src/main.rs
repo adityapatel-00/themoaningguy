@@ -15,6 +15,7 @@ use player::{BundleInfo, PlayerHandle, SoundInfo};
 use settings::Settings;
 
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use serde::Serialize;
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
@@ -80,7 +81,7 @@ fn sanitize_settings_for_available_bundles(settings: &mut Settings, player: &Pla
 
 #[tauri::command]
 fn get_settings(state: tauri::State<'_, AppState>) -> Settings {
-    state.settings.lock().unwrap().clone()
+    state.settings.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
 
 #[tauri::command]
@@ -89,7 +90,7 @@ fn save_settings(
     app_handle: tauri::AppHandle,
     new_settings: Settings,
 ) -> Result<(), String> {
-    let mut s = state.settings.lock().unwrap();
+    let mut s = state.settings.lock().unwrap_or_else(|e| e.into_inner());
     *s = new_settings;
     s.validate();
     sanitize_settings_for_available_bundles(&mut s, &state.player);
@@ -114,7 +115,7 @@ fn toggle_enabled(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> bool {
-    let mut s = state.settings.lock().unwrap();
+    let mut s = state.settings.lock().unwrap_or_else(|e| e.into_inner());
     s.enabled = !s.enabled;
     sanitize_settings_for_available_bundles(&mut s, &state.player);
     s.save(&app_handle);
@@ -189,7 +190,7 @@ fn delete_bundle(
         .map(|bundle| bundle.name.clone())
         .unwrap_or_default();
 
-    let mut settings = state.settings.lock().unwrap();
+    let mut settings = state.settings.lock().unwrap_or_else(|e| e.into_inner());
     if settings.bundle == name {
         settings.bundle = fallback.clone();
     }
@@ -216,7 +217,7 @@ fn rename_bundle(
 ) -> Result<(), String> {
     state.player.rename_bundle(&old_name, &new_name)?;
 
-    let mut settings = state.settings.lock().unwrap();
+    let mut settings = state.settings.lock().unwrap_or_else(|e| e.into_inner());
     if settings.bundle == old_name {
       settings.bundle = new_name.clone();
     }
@@ -290,14 +291,15 @@ fn main() {
             let player_ref = player.clone();
             let settings_ref = shared_settings.clone();
             let detector = DetectorHandle::spawn(move |intensity| {
-                let s = settings_ref.lock().unwrap();
+                let s = settings_ref.lock().unwrap_or_else(|e| e.into_inner());
                 player_ref.play(&s.bundle, s.volume, intensity);
             });
 
             let player_ref = player.clone();
             let settings_ref = shared_settings.clone();
+            let last_port_trigger = Arc::new(Mutex::new(Instant::now() - std::time::Duration::from_secs(10)));
             let port_monitor = PortMonitorHandle::spawn(move |kind, connected| {
-                let s = settings_ref.lock().unwrap();
+                let s = settings_ref.lock().unwrap_or_else(|e| e.into_inner());
                 if let Some(rule) = s.port_rules.iter().find(|rule| rule.kind == kind) {
                     let should_fire = if connected {
                         rule.on_connect
@@ -306,7 +308,16 @@ fn main() {
                     };
 
                     if should_fire && !rule.bundle.is_empty() {
-                        player_ref.play(&rule.bundle, s.volume, 0.9);
+                        // Port events have a cooldown to prevent rapid-fire triggers
+                        // from device negotiation or charger state toggling.
+                        let mut lt = last_port_trigger.lock().unwrap_or_else(|e| e.into_inner());
+                        let elapsed = Instant::now().duration_since(*lt).as_millis() as u64;
+                        let port_cooldown = s.cooldown_ms.max(1500);
+                        if elapsed >= port_cooldown {
+                            *lt = Instant::now();
+                            drop(lt);
+                            player_ref.play(&rule.bundle, s.volume, 0.9);
+                        }
                     }
                 }
             });
@@ -355,8 +366,10 @@ fn main() {
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "toggle" => {
                         let state: tauri::State<'_, AppState> = app.state();
-                        let mut s = state.settings.lock().unwrap();
+                        let mut s = state.settings.lock().unwrap_or_else(|e| e.into_inner());
                         s.enabled = !s.enabled;
+                        s.validate();
+                        sanitize_settings_for_available_bundles(&mut s, &state.player);
                         s.save(app);
                         let enabled = s.enabled;
 
@@ -381,7 +394,7 @@ fn main() {
                     }
                     "test" => {
                         let state: tauri::State<'_, AppState> = app.state();
-                        let s = state.settings.lock().unwrap();
+                        let s = state.settings.lock().unwrap_or_else(|e| e.into_inner());
                         state.player.play(&s.bundle, s.volume, 0.8);
                     }
                     "quit" => {
