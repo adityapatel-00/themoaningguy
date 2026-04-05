@@ -681,6 +681,7 @@ fn decode_sensor_sample(report: &[u8]) -> Option<[f32; 3]> {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn vector_delta(prev: [f32; 3], curr: [f32; 3]) -> f32 {
     let dx = curr[0] - prev[0];
     let dy = curr[1] - prev[1];
