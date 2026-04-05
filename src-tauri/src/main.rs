@@ -50,6 +50,14 @@ struct RuntimeDiagnostics {
     ports: Vec<ports::PortCapability>,
 }
 
+fn show_settings_window(app: &tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("settings") {
+        let _ = win.unminimize();
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
+}
+
 fn sanitize_settings_for_available_bundles(settings: &mut Settings, player: &PlayerHandle) {
     let fallback = player.first_playable_bundle().unwrap_or_default();
 
@@ -255,12 +263,15 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // Another instance was launched — show settings window
-            if let Some(win) = app.get_webview_window("settings") {
-                win.show().ok();
-                win.set_focus().ok();
-            }
+            show_settings_window(app);
         }))
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                let _ = app.handle().set_activation_policy(tauri::ActivationPolicy::Accessory);
+                let _ = app.handle().set_dock_visibility(false);
+            }
+
             let settings = Settings::load(&app.handle());
 
             let sounds_dir = app
@@ -333,15 +344,12 @@ fn main() {
 
             let _tray = TrayIconBuilder::new()
                 .menu(&menu)
+                .show_menu_on_left_click(false)
                 .tooltip("The Moaning Guy")
                 .icon(app.default_window_icon().unwrap().clone())
                 .on_tray_icon_event(|tray, event| {
                     if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
-                        let app = tray.app_handle();
-                        if let Some(win) = app.get_webview_window("settings") {
-                            win.show().ok();
-                            win.set_focus().ok();
-                        }
+                        show_settings_window(&tray.app_handle());
                     }
                 })
                 .on_menu_event(move |app, event| match event.id().as_ref() {
@@ -369,10 +377,7 @@ fn main() {
                         app.emit("settings-changed", &sc).ok();
                     }
                     "settings" => {
-                        if let Some(win) = app.get_webview_window("settings") {
-                            win.show().ok();
-                            win.set_focus().ok();
-                        }
+                        show_settings_window(app);
                     }
                     "test" => {
                         let state: tauri::State<'_, AppState> = app.state();
