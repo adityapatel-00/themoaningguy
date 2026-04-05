@@ -491,27 +491,18 @@ mod apple_spu {
 
     /// Check if the Apple Silicon accelerometer is available.
     pub fn probe() -> bool {
-        eprintln!("[spu] waking SPU drivers...");
         wake_spu_drivers();
         let svc = match find_accel_service() {
-            Some(s) => {
-                eprintln!("[spu] found accel service: {}", s);
-                s
-            }
-            None => {
-                eprintln!("[spu] no AppleSPUHIDDevice with accel usage found");
-                return false;
-            }
+            Some(s) => s,
+            None => return false,
         };
         unsafe {
             let hid = IOHIDDeviceCreate(K_CF_ALLOCATOR_DEFAULT, svc);
             IOObjectRelease(svc);
             if hid.is_null() {
-                eprintln!("[spu] IOHIDDeviceCreate returned null");
                 return false;
             }
             let kr = IOHIDDeviceOpen(hid, 0);
-            eprintln!("[spu] IOHIDDeviceOpen returned: {}", kr);
             if kr == 0 {
                 IOHIDDeviceClose(hid, 0);
             }
@@ -525,7 +516,6 @@ mod apple_spu {
         prev: [f32; 3],
         peak_motion: f32,
         has_data: bool,
-        report_count: u32,
     }
 
     unsafe extern "C" fn report_callback(
@@ -557,13 +547,6 @@ mod apple_spu {
         ]) as f32 / 65536.0;
 
         if let Ok(mut s) = state.lock() {
-            s.report_count += 1;
-            if s.report_count <= 3 {
-                eprintln!(
-                    "[spu] report #{}: x={:.4} y={:.4} z={:.4} len={}",
-                    s.report_count, x, y, z, report_length
-                );
-            }
             if s.has_data {
                 let dx = x - s.latest[0];
                 let dy = y - s.latest[1];
@@ -591,17 +574,14 @@ mod apple_spu {
 
     impl SpuAccel {
         pub fn open() -> Option<Self> {
-            eprintln!("[spu] SpuAccel::open starting...");
             wake_spu_drivers();
             let svc = find_accel_service()?;
-            eprintln!("[spu] opening device for streaming...");
 
             let state = Arc::new(Mutex::new(CallbackState {
                 latest: [0.0; 3],
                 prev: [0.0; 3],
                 peak_motion: 0.0,
                 has_data: false,
-                report_count: 0,
             }));
             let stop = Arc::new(AtomicBool::new(false));
             let state_clone = state.clone();
@@ -612,18 +592,15 @@ mod apple_spu {
                 let hid = IOHIDDeviceCreate(K_CF_ALLOCATOR_DEFAULT, svc);
                 IOObjectRelease(svc);
                 if hid.is_null() {
-                    eprintln!("[spu] IOHIDDeviceCreate returned null in thread");
                     let _ = ready_tx.send(false);
                     return;
                 }
                 let kr = IOHIDDeviceOpen(hid, 0);
                 if kr != 0 {
-                    eprintln!("[spu] IOHIDDeviceOpen failed in thread: {}", kr);
                     CFRelease(hid as CFTypeRef);
                     let _ = ready_tx.send(false);
                     return;
                 }
-                eprintln!("[spu] device opened, registering callback...");
 
                 // Stable buffer that won't move — IOKit writes into this
                 // pointer from its own internal thread.
@@ -664,18 +641,8 @@ mod apple_spu {
             });
 
             match ready_rx.recv_timeout(Duration::from_secs(2)) {
-                Ok(true) => {
-                    eprintln!("[spu] SpuAccel ready, streaming started");
-                    Some(SpuAccel { state, stop, _thread: thread })
-                }
-                Ok(false) => {
-                    eprintln!("[spu] SpuAccel failed to open in thread");
-                    None
-                }
-                Err(_) => {
-                    eprintln!("[spu] SpuAccel timed out waiting for thread");
-                    None
-                }
+                Ok(true) => Some(SpuAccel { state, stop, _thread: thread }),
+                _ => None,
             }
         }
 
