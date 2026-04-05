@@ -553,6 +553,14 @@ fn run_accelerometer_loop(
         }
 
         if let Some(reading) = read_backend_sample(&backend) {
+            if warmup_count < 5 {
+                eprintln!(
+                    "[accel] sample={:.4},{:.4},{:.4} peak_motion={:.6}",
+                    reading.sample[0], reading.sample[1], reading.sample[2],
+                    reading.peak_motion
+                );
+            }
+
             // ── Apply high-pass filter to remove gravity ──────────
             if !hp_initialized {
                 hp_prev_raw = reading.sample;
@@ -576,29 +584,47 @@ fn run_accelerometer_loop(
                 + filtered[2] * filtered[2])
             .sqrt();
 
-            // For Apple Silicon, also consider the 800 Hz peak delta
-            // which catches sub-16ms slaps the polling-rate filter misses.
-            let motion = reading.peak_motion.max(filtered_mag);
+            // Use the high-pass filtered signal for STA/LTA (gravity-free).
+            // The 800 Hz peak_motion is a raw delta that still contains
+            // gravity rotation, so we only use it as an extra trigger
+            // condition, not as the STA/LTA input.
+            let motion = filtered_mag;
 
-            // ── STA/LTA ──────────────────────────────────────────
-            sta = sta * (1.0 - STA_ALPHA) + motion * STA_ALPHA;
-            lta = lta * (1.0 - LTA_ALPHA) + motion * LTA_ALPHA;
+            // ── STA/LTA on energy (mag²) — matches spank ────────
+            let energy = motion * motion;
+            sta = sta * (1.0 - STA_ALPHA) + energy * STA_ALPHA;
+            lta = lta * (1.0 - LTA_ALPHA) + energy * LTA_ALPHA;
 
             warmup_count = warmup_count.saturating_add(1);
             if warmup_count < WARMUP_SAMPLES {
-                lta = lta.max(motion * 0.5);
+                lta = lta.max(energy * 0.5);
                 thread::sleep(Duration::from_millis(16));
                 continue;
             }
 
-            let ratio = if lta > 0.001 { sta / lta } else { 0.0 };
+            let ratio = if lta > 0.000_001 { sta / lta } else { 0.0 };
 
-            if ratio > STA_LTA_RATIO && motion >= accel_threshold {
+            // Trigger if: STA/LTA spikes AND EITHER the filtered signal
+            // or the 800 Hz peak delta exceeds the threshold.
+            let effective_motion = motion.max(reading.peak_motion);
+
+            if ratio > 2.0 || effective_motion > 0.02 {
+                eprintln!(
+                    "[accel] filtered={:.5} peak={:.5} ratio={:.2} thresh={:.3}",
+                    motion, reading.peak_motion, ratio, accel_threshold
+                );
+            }
+
+            if ratio > STA_LTA_RATIO && effective_motion >= accel_threshold {
                 let now = Instant::now();
                 let elapsed = now.duration_since(last_trigger).as_millis() as u64;
                 if elapsed >= cooldown_ms {
                     last_trigger = now;
-                    let intensity = (motion / 0.35).clamp(0.15, 1.0);
+                    // Logarithmic volume scaling similar to spank:
+                    // map [0.05, 0.80]g → intensity [0.15, 1.0]
+                    let intensity = ((effective_motion / 0.05).ln()
+                        / (0.80f32 / 0.05).ln())
+                    .clamp(0.15, 1.0);
                     on_slap(intensity);
                 }
             }
