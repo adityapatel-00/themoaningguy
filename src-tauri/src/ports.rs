@@ -966,6 +966,7 @@ fn spawn_macos_monitor_loop(
     }
 
     let mut previous = poll_port_snapshot();
+    let mut ticks_since_poll: u32 = 0;
 
     loop {
         if stop_rx.try_recv().is_ok() {
@@ -978,7 +979,12 @@ fn spawn_macos_monitor_loop(
             CFRunLoop::run_in_mode(kCFRunLoopDefaultMode, 0.5, true);
         }
 
-        if event_rx.try_recv().is_ok() {
+        ticks_since_poll += 1;
+        // Poll on IOKit events OR every ~2 s (4 × 0.5 s ticks) to catch
+        // changes that don't fire IOKit notifications (e.g. MagSafe).
+        let iokit_event = event_rx.try_recv().is_ok();
+        if iokit_event || ticks_since_poll >= 4 {
+            ticks_since_poll = 0;
             let current = poll_port_snapshot();
             emit_changes(previous, current, on_event.clone());
             previous = current;

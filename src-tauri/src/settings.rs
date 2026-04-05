@@ -26,7 +26,7 @@ impl Default for Settings {
             sensitivity: 0.15,
             cooldown_ms: 2000,
             volume: 0.8,
-            enabled: true,
+            enabled: false,
             detection_mode: DetectionMode::Microphone,
             bundle: "default".to_string(),
             port_rules: PortKind::all()
