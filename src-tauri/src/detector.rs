@@ -360,6 +360,7 @@ mod apple_spu {
             seconds: f64,
             return_after_source_handled: u8,
         ) -> i32;
+        #[allow(dead_code)]
         fn CFRunLoopStop(rl: CFRunLoopRef);
         fn CFStringCreateWithCString(
             alloc: CFAllocatorRef,
@@ -578,9 +579,14 @@ mod apple_spu {
 
     pub struct SpuAccel {
         state: Arc<Mutex<CallbackState>>,
-        // Keep the thread alive; when SpuAccel is dropped the thread
-        // stops via the Arc refcount going to zero.
+        stop: Arc<AtomicBool>,
         _thread: std::thread::JoinHandle<()>,
+    }
+
+    impl Drop for SpuAccel {
+        fn drop(&mut self) {
+            self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
     }
 
     impl SpuAccel {
@@ -597,7 +603,9 @@ mod apple_spu {
                 has_data: false,
                 report_count: 0,
             }));
+            let stop = Arc::new(AtomicBool::new(false));
             let state_clone = state.clone();
+            let stop_clone = stop.clone();
             let (ready_tx, ready_rx) = std::sync::mpsc::channel();
 
             let thread = std::thread::spawn(move || unsafe {
@@ -617,13 +625,18 @@ mod apple_spu {
                 }
                 eprintln!("[spu] device opened, registering callback...");
 
-                let mut report_buf = vec![0u8; REPORT_BUF_SZ];
-                let state_ptr = Arc::into_raw(state_clone) as *mut c_void;
+                // Stable buffer that won't move — IOKit writes into this
+                // pointer from its own internal thread.
+                let report_buf = Box::into_raw(
+                    vec![0u8; REPORT_BUF_SZ].into_boxed_slice(),
+                ) as *mut u8;
+                let state_ptr = &*state_clone as *const Mutex<CallbackState>
+                    as *mut c_void;
 
                 IOHIDDeviceRegisterInputReportCallback(
                     hid,
-                    report_buf.as_mut_ptr(),
-                    report_buf.len(),
+                    report_buf,
+                    REPORT_BUF_SZ,
                     report_callback,
                     state_ptr,
                 );
@@ -633,32 +646,27 @@ mod apple_spu {
 
                 let _ = ready_tx.send(true);
 
-                // Run until the Arc is the last reference (SpuAccel dropped).
-                loop {
+                while !stop_clone.load(std::sync::atomic::Ordering::Relaxed) {
                     CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.25, 0);
-                    // Check if we're the only holder of the Arc.
-                    let raw = state_ptr as *const Mutex<CallbackState>;
-                    if Arc::strong_count(&Arc::from_raw(raw)) <= 1 {
-                        // Re-leak so we can clean up below.
-                        let _ = Arc::into_raw(Arc::from_raw(raw));
-                        break;
-                    }
-                    // Re-leak — we only peeked.
-                    let _ = Arc::into_raw(Arc::from_raw(raw));
                 }
 
                 IOHIDDeviceUnscheduleFromRunLoop(hid, rl, kCFRunLoopDefaultMode);
+                IOHIDDeviceRegisterInputReportCallback(
+                    hid, report_buf, REPORT_BUF_SZ,
+                    report_callback_noop, std::ptr::null_mut(),
+                );
                 IOHIDDeviceClose(hid, 0);
                 CFRelease(hid as CFTypeRef);
-                // Drop the Arc we leaked into the callback.
-                drop(Arc::from_raw(state_ptr as *const Mutex<CallbackState>));
-                let _ = report_buf; // prevent drop before callback done
+                // Now safe to free the buffer — callback is unregistered.
+                drop(Box::from_raw(std::slice::from_raw_parts_mut(
+                    report_buf, REPORT_BUF_SZ,
+                )));
             });
 
             match ready_rx.recv_timeout(Duration::from_secs(2)) {
                 Ok(true) => {
                     eprintln!("[spu] SpuAccel ready, streaming started");
-                    Some(SpuAccel { state, _thread: thread })
+                    Some(SpuAccel { state, stop, _thread: thread })
                 }
                 Ok(false) => {
                     eprintln!("[spu] SpuAccel failed to open in thread");
@@ -684,6 +692,14 @@ mod apple_spu {
             Some(reading)
         }
     }
+
+    /// No-op callback used to unregister the real callback before cleanup.
+    unsafe extern "C" fn report_callback_noop(
+        _: *mut c_void, _: IOReturn, _: *mut c_void,
+        _: u32, _: u32, _: *mut u8, _: usize,
+    ) {}
+
+    use std::sync::atomic::AtomicBool;
 }
 
 // ── Linux IIO subsystem ───────────────────────────────────────────
