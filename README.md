@@ -5,7 +5,7 @@
 <h1 align="center">The Moaning Guy</h1>
 
 <p align="center">
-  Plays moaning sounds when you slap your laptop. Inspired by <a href="https://slapmac.com">SlapMac</a> — but for Windows, macOS, and Linux.
+  Plays moaning sounds when you slap your laptop. Inspired by <a href="https://slapmac.com">SlapMac</a> - but for Windows, macOS, and Linux.
 </p>
 
 <p align="center">
@@ -25,62 +25,62 @@
 
 When available, **The Moaning Guy can use a built-in accelerometer / motion sensor** for more precise slap detection. On devices without sensor support, it automatically falls back to the **microphone detector**.
 
-A slap on the laptop chassis produces a sharp, short impulse that's easy to distinguish from normal audio. The app listens in real-time, detects either motion spikes or microphone amplitude spikes above a configurable threshold, and plays a random sound from your selected bundle.
+A slap on the laptop chassis produces a sharp, short impulse that is easy to distinguish from normal audio. The app listens in real time, detects either motion spikes or microphone amplitude spikes above a configurable threshold, and plays a random sound from your selected bundle.
 
-```
-Mic Input → Amplitude Analysis → Spike Detection → Sound Playback
-              (cpal)             (threshold + cooldown)    (rodio)
+```text
+Mic Input -> Amplitude Analysis -> Spike Detection -> Sound Playback
+             (cpal)              (threshold + cooldown)    (rodio)
 ```
 
-- **Volume scales with force** — harder slap = louder moan
-- **Shuffle bag** — plays through all sounds before repeating any
-- **No overlap** — new trigger stops the previous sound
-- **Accelerometer mode** — use supported sensor hardware for tighter slap detection
-- **Microphone fallback** — works on devices without a motion sensor
-- **Port rules** — trigger bundles on charging, USB storage, external display, Ethernet, and dock events
-- **Adjustable sensitivity** — tune it for your environment
-- **Cooldown timer** — prevent rapid-fire triggers
+- **Volume scales with force** - harder slap = louder moan
+- **Shuffle bag** - plays through all sounds before repeating any
+- **No overlap** - new trigger stops the previous sound
+- **Accelerometer mode** - use supported sensor hardware for tighter slap detection
+- **Microphone fallback** - works on devices without a motion sensor
+- **Port rules** - trigger bundles on charging, USB storage, external display, Ethernet, and dock events
+- **Adjustable sensitivity** - tune it for your environment
+- **Cooldown timer** - prevent rapid-fire triggers
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────┐
-│            System Tray                  │
-│   Pause/Resume · Test · Settings · Quit │
-└──────────────┬──────────────────────────┘
-               │
-       ┌───────┴────────┐
-       │  Settings UI   │    ← HTML/CSS/JS (Tauri webview)
-       │  (settings.html)│
-       └───────┬────────┘
-               │ IPC (invoke/emit)
-       ┌───────┴────────┐
-       │   Rust Backend  │
-       │                 │
-       │  ┌─Detector────┐│   ← Dedicated thread, cpal mic input
-       │  │ Threshold    ││
-       │  │ Cooldown     ││
-       │  │ on_slap(f32) ││
-       │  └──────┬──────┘│
-       │         │       │
-       │  ┌──────▼──────┐│   ← Dedicated thread, rodio output
-       │  │   Player     ││
-       │  │ Shuffle bag  ││
-       │  │ Single sink  ││
-       │  └─────────────┘│
-       │                 │
-       │  ┌─Settings────┐│   ← Arc<Mutex<Settings>>
-       │  │ JSON on disk ││
-       │  └─────────────┘│
-       └─────────────────┘
-               │
-       ┌───────▼────────┐
-       │  App Data Dir   │    ← %APPDATA% / ~/Library / ~/.local/share
-       │  sounds/        │
-       │    bundle-a/    │
-       │    bundle-b/    │
-       │  settings.json  │
-       └────────────────┘
+```text
++-----------------------------------------+
+|              System Tray                |
+|   Pause/Resume · Test · Settings · Quit |
++--------------+--------------------------+
+               |
+       +-------v--------+    <- HTML/CSS/JS (Tauri webview)
+       |  Settings UI   |
+       | (settings.html)|
+       +-------+--------+
+               | IPC (invoke/emit)
+       +-------v--------+
+       |   Rust Backend |
+       |                |
+       |  + Detector +  |    <- Dedicated thread, cpal mic input
+       |  | Threshold | |
+       |  | Cooldown  | |
+       |  | on_slap() | |
+       |  +-----+-----+ |
+       |        |       |
+       |  +-----v-----+ |    <- Dedicated thread, rodio output
+       |  |  Player   | |
+       |  | Shuffle   | |
+       |  | Single    | |
+       |  +-----------+ |
+       |                |
+       |  + Settings +  |    <- Arc<Mutex<Settings>>
+       |  | JSON disk | |
+       |  +-----------+ |
+       +--------+-------+
+                |
+       +--------v--------+    <- %APPDATA% / ~/Library / ~/.local/share
+       |   App Data Dir  |
+       |   sounds/       |
+       |     bundle-a/   |
+       |     bundle-b/   |
+       |   settings.json |
+       +-----------------+
 ```
 
 ## Tech Stack
@@ -126,15 +126,15 @@ Produces platform-specific installers in `src-tauri/target/release/bundle/`.
 
 ## Usage
 
-1. Launch the app — it sits in your **system tray**
-2. Right-click the tray icon → **Settings**
-3. Create a **sound bundle** and import your audio files (wav, mp3, ogg, flac)
+1. Launch the app - it sits in your **system tray**
+2. Right-click the tray icon -> **Settings**
+3. Create a **sound bundle** and import your audio files (`wav`, `mp3`, `ogg`, `flac`)
 4. Pick **Accelerometer** or **Microphone** mode when available
 5. Configure **Port Detection** rules for connect/remove events
 6. Adjust **sensitivity**, **cooldown**, and **volume**
-7. Save — then slap your laptop
+7. Save - then slap your laptop
 
-The settings screen also includes a small support prompt and footer links for GitHub Sponsors, Ko-fi, and starring the repo.
+The settings screen also includes a small support prompt and footer links for GitHub Sponsors, Ko-fi, UPI (`x.pulseop@axl`), and starring the repo.
 
 ## Safety & Limitations
 
@@ -153,20 +153,24 @@ This software is provided "as is", without warranty of any kind. The author is n
 
 The app ships without sounds. You bring your own:
 
-1. Open Settings → create a bundle (e.g. "anime", "dramatic")
+1. Open Settings -> create a bundle (for example, `anime` or `dramatic`)
 2. Click **+ Add Sound Files** inside the bundle
-3. Select audio files from your machine (wav, mp3, ogg, flac)
+3. Select audio files from your machine (`wav`, `mp3`, `ogg`, `flac`)
 4. Select the bundle as active and Save
 
 Sounds are stored in your app data directory and persist across updates.
+
+## Project Site
+
+The GitHub Pages landing page lives in [docs/index.html](docs/index.html). Enable GitHub Pages from the repo `docs/` folder to publish it.
 
 ## Platform Notes
 
 | Platform | Tray Icon | Notes |
 |----------|-----------|-------|
 | **Windows** | Works out of the box | Appears in system tray |
-| **macOS** | Works out of the box | Appears in menu bar. You may need to grant **Microphone** permission in System Settings → Privacy & Security |
-| **Linux** | Usually works | If the tray icon doesn't appear on GNOME, install the [AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/) |
+| **macOS** | Works out of the box | Appears in menu bar. You may need to grant **Microphone** permission in System Settings -> Privacy & Security |
+| **Linux** | Usually works | If the tray icon does not appear on GNOME, install the [AppIndicator extension](https://extensions.gnome.org/extension/615/appindicator-support/) |
 
 ## License
 

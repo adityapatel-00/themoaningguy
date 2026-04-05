@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -406,6 +406,92 @@
       gap: 10px;
     }
 
+    .upi-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 110px;
+    }
+
+    .upi-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(12, 10, 18, 0.72);
+      backdrop-filter: blur(10px);
+      z-index: 30;
+    }
+
+    .upi-modal.show {
+      display: flex;
+    }
+
+    .upi-modal-card {
+      width: min(100%, 380px);
+      padding: 24px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248, 245, 255, 0.96));
+      border: 1px solid rgba(35, 20, 51, 0.08);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .upi-modal-card h3 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      color: #2a193d;
+    }
+
+    .upi-modal-card p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .upi-modal-card img {
+      width: 200px;
+      height: 200px;
+      border-radius: 18px;
+      background: #fff;
+      padding: 10px;
+      border: 1px solid rgba(35, 20, 51, 0.10);
+      box-shadow: 0 10px 24px rgba(34, 20, 51, 0.08);
+      margin-bottom: 16px;
+    }
+
+    .upi-id-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(35, 20, 51, 0.10);
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .upi-id-box span {
+      color: var(--text);
+      font-weight: 700;
+      word-break: break-all;
+    }
+
+    .upi-copy-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, rgba(86, 201, 176, 0.18), rgba(255,255,255,0.96));
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
     .footer {
       display: flex;
       justify-content: space-between;
@@ -480,7 +566,9 @@
     html[data-theme="dark"] .hero-card,
     html[data-theme="dark"] .card,
     html[data-theme="dark"] .support-box,
-    html[data-theme="dark"] .stat {
+    html[data-theme="dark"] .stat,
+    html[data-theme="dark"] .upi-modal-card,
+    html[data-theme="dark"] .upi-id-box {
       background: linear-gradient(180deg, rgba(31, 25, 43, 0.96), rgba(24, 19, 34, 0.94));
       border-color: rgba(255, 255, 255, 0.08);
     }
@@ -498,10 +586,34 @@
     }
 
     @media (max-width: 920px) {
+      .wrap {
+        width: min(100% - 24px, 1120px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        padding: 16px;
+        gap: 14px;
+      }
+
+      .top-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
       .hero,
       .cards,
       .support {
         grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 48px;
+        gap: 18px;
+      }
+
+      .hero-card {
+        padding: 24px;
       }
 
       .stat-grid {
@@ -513,18 +625,158 @@
       .wrap {
         width: min(100% - 20px, 1120px);
         padding-top: 12px;
+        padding-bottom: 40px;
       }
 
       .topbar {
         position: static;
+        border-radius: 22px;
+        padding: 14px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .brand-mini {
+        width: 100%;
+      }
+
+      .brand-mini img {
+        width: 34px;
+        height: 34px;
+      }
+
+      .brand-copy strong {
+        font-size: 14px;
+      }
+
+      .brand-copy span {
+        font-size: 11px;
+      }
+
+      .top-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .pill {
+        width: 100%;
+        justify-content: center;
+        padding: 11px 12px;
+      }
+
+      .theme-toggle {
+        min-width: 0;
       }
 
       .hero {
-        padding-top: 38px;
+        padding-top: 32px;
+        gap: 16px;
       }
 
       h1 {
         max-width: 100%;
+        font-size: clamp(2.5rem, 15vw, 4rem);
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+
+      .hero-actions {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .hero-card {
+        padding: 20px;
+        border-radius: 24px;
+      }
+
+      .logo-panel {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .logo-panel img {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+      }
+
+      .card,
+      .support-box {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .section {
+        padding-top: 22px;
+      }
+
+      .section-header {
+        margin-bottom: 14px;
+      }
+
+      .section-header h2 {
+        font-size: clamp(1.7rem, 9vw, 2.2rem);
+      }
+
+      .support-links {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .upi-modal {
+        padding: 14px;
+      }
+
+      .upi-modal-card {
+        padding: 20px 16px;
+        border-radius: 22px;
+      }
+
+      .upi-modal-card img {
+        width: min(180px, 62vw);
+        height: min(180px, 62vw);
+      }
+
+      .upi-id-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .upi-copy-btn,
+      #closeUpiBtn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .wrap {
+        width: min(100% - 16px, 1120px);
+      }
+
+      .top-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .eyebrow {
+        font-size: 12px;
+      }
+
+      .card,
+      .support-box,
+      .hero-card {
+        padding: 16px;
       }
     }
   </style>
@@ -548,6 +800,7 @@
         </a>
         <a class="pill" href="https://github.com/sponsors/adityapatel-00" target="_blank" rel="noreferrer">Sponsor</a>
         <a class="pill" href="https://ko-fi.com/adityapatel_00" target="_blank" rel="noreferrer">Ko-fi</a>
+        <button class="pill" id="openUpiPill" type="button">UPI</button>
         <button class="pill theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
           <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"></svg>
         </button>
@@ -602,10 +855,6 @@
     <section class="section" id="features">
       <div class="section-header">
         <h2>What this nonsense does</h2>
-        <p>
-          It’s the kind of app that should probably not exist, which is exactly why it does. Slap,
-          plug, unplug, and let the machine react like it has emotions.
-        </p>
       </div>
 
       <div class="cards">
@@ -632,7 +881,7 @@
           <h3>Import your own audio packs</h3>
           <p>
             Organize files into bundles, preview them, shuffle through them, and trigger different packs
-            from the tray like you’re programming a tiny cursed jukebox.
+            from the tray like you're programming a tiny cursed jukebox.
           </p>
         </article>
       </div>
@@ -641,10 +890,6 @@
     <section class="section" id="download">
       <div class="section-header">
         <h2>Download</h2>
-        <p>
-          The easiest path is the latest GitHub release. If you prefer to poke around, the source and
-          release history are still one click away.
-        </p>
       </div>
 
       <div class="cards">
@@ -676,11 +921,13 @@
           <div class="tag">Still supportive</div>
           <h3>Support the project</h3>
           <p>
-            If you like the app, you can help keep the silly alive through GitHub Sponsors or Ko-fi.
+            If you like the app, you can help keep the silly alive through GitHub Sponsors, Ko-fi,
+            or a quick UPI donation.
           </p>
           <div class="hero-actions" style="margin-top: 18px;">
             <a class="button secondary" href="https://github.com/sponsors/adityapatel-00" target="_blank" rel="noreferrer">Sponsor</a>
             <a class="button secondary" href="https://ko-fi.com/adityapatel_00" target="_blank" rel="noreferrer">Ko-fi</a>
+            <button class="button secondary upi-trigger" id="openUpiDownloadBtn" type="button">UPI</button>
           </div>
         </article>
       </div>
@@ -697,6 +944,7 @@
           <div class="support-links">
             <a class="button primary" href="https://github.com/sponsors/adityapatel-00" target="_blank" rel="noreferrer">GitHub Sponsors</a>
             <a class="button secondary" href="https://ko-fi.com/adityapatel_00" target="_blank" rel="noreferrer">Ko-fi</a>
+            <button class="button secondary upi-trigger" id="openUpiSupportBtn" type="button">UPI</button>
             <a class="button secondary" href="https://github.com/adityapatel-00/themoaningguy" target="_blank" rel="noreferrer">Star the repo</a>
           </div>
         </div>
@@ -721,11 +969,31 @@
     </section>
   </main>
 
+  <div class="upi-modal" id="upiModal">
+    <div class="upi-modal-card">
+      <h3>UPI Support</h3>
+      <p>Scan the QR with any UPI app, or copy the UPI ID.</p>
+      <img src="./assets/upi-qr.png" alt="UPI QR code for x.pulseop@axl" />
+      <div class="upi-id-box">
+        <span>x.pulseop@axl</span>
+        <button class="upi-copy-btn" id="copyUpiBtn" type="button">Copy</button>
+      </div>
+      <button class="button secondary" id="closeUpiBtn" type="button">Close</button>
+    </div>
+  </div>
+
   <script>
     const starsText = document.getElementById('starsText');
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
+    const openUpiPill = document.getElementById('openUpiPill');
+    const openUpiDownloadBtn = document.getElementById('openUpiDownloadBtn');
+    const openUpiSupportBtn = document.getElementById('openUpiSupportBtn');
+    const upiModal = document.getElementById('upiModal');
+    const copyUpiBtn = document.getElementById('copyUpiBtn');
+    const closeUpiBtn = document.getElementById('closeUpiBtn');
     const root = document.documentElement;
+    const SUPPORT_UPI_ID = 'x.pulseop@axl';
 
     function getTheme() {
       return localStorage.getItem('tmg-theme') || 'light';
@@ -745,6 +1013,32 @@
       const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
       localStorage.setItem('tmg-theme', next);
       applyTheme(next);
+    });
+
+    async function copyUpiId() {
+      try {
+        await navigator.clipboard.writeText(SUPPORT_UPI_ID);
+        alert(`UPI ID copied: ${SUPPORT_UPI_ID}`);
+      } catch (error) {
+        alert(`UPI ID: ${SUPPORT_UPI_ID}`);
+      }
+    }
+
+    function openUpiModal() {
+      upiModal.classList.add('show');
+    }
+
+    function closeUpiModal() {
+      upiModal.classList.remove('show');
+    }
+
+    [openUpiPill, openUpiDownloadBtn, openUpiSupportBtn].forEach((button) => {
+      button?.addEventListener('click', openUpiModal);
+    });
+    copyUpiBtn?.addEventListener('click', copyUpiId);
+    closeUpiBtn?.addEventListener('click', closeUpiModal);
+    upiModal?.addEventListener('click', (event) => {
+      if (event.target === upiModal) closeUpiModal();
     });
 
     async function loadStars() {
@@ -767,3 +1061,4 @@
   </script>
 </body>
 </html>
+

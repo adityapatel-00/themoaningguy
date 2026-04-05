@@ -372,6 +372,7 @@ fn spawn_windows_monitor_loop(
     on_event: Arc<dyn Fn(PortKind, bool) + Send + Sync>,
 ) {
     unsafe {
+        let (direct_tx, direct_rx) = mpsc::channel::<(PortKind, bool)>();
         let hinstance = GetModuleHandleW(null());
         let class_name = wide_string("TheMoaningGuyPortMonitor");
 
@@ -392,6 +393,7 @@ fn spawn_windows_monitor_loop(
 
         let context = Box::new(WindowsMonitorContext {
             dirty_event: CreateEventW(null(), 1, 0, null()),
+            direct_tx,
         });
         if context.dirty_event.is_null() {
             let mut previous = poll_port_snapshot();
@@ -444,6 +446,18 @@ fn spawn_windows_monitor_loop(
             }
 
             if result == WAIT_OBJECT_0 + 1 {
+                while let Ok((kind, connected)) = direct_rx.try_recv() {
+                    if snapshot_for_kind(previous, kind) != Some(connected) {
+                        on_event(kind, connected);
+                        match kind {
+                            PortKind::Charging => previous.charging = Some(connected),
+                            PortKind::UsbStorage => previous.usb_storage = Some(connected),
+                            PortKind::ExternalDisplay => previous.external_display = Some(connected),
+                            PortKind::Ethernet => previous.ethernet = Some(connected),
+                            PortKind::ThunderboltDock => previous.thunderbolt_dock = Some(connected),
+                        }
+                    }
+                }
                 let current = poll_port_snapshot();
                 emit_changes(previous, current, on_event.clone());
                 previous = current;
@@ -456,6 +470,19 @@ fn spawn_windows_monitor_loop(
                 while PeekMessageW(&mut msg, std::ptr::null_mut(), 0, 0, PM_REMOVE) != 0 {
                     TranslateMessage(&msg);
                     DispatchMessageW(&msg);
+                }
+
+                while let Ok((kind, connected)) = direct_rx.try_recv() {
+                    if snapshot_for_kind(previous, kind) != Some(connected) {
+                        on_event(kind, connected);
+                        match kind {
+                            PortKind::Charging => previous.charging = Some(connected),
+                            PortKind::UsbStorage => previous.usb_storage = Some(connected),
+                            PortKind::ExternalDisplay => previous.external_display = Some(connected),
+                            PortKind::Ethernet => previous.ethernet = Some(connected),
+                            PortKind::ThunderboltDock => previous.thunderbolt_dock = Some(connected),
+                        }
+                    }
                 }
 
                 if WaitForSingleObject((*context_ptr).dirty_event, 0) == WAIT_OBJECT_0 {
@@ -512,9 +539,9 @@ unsafe extern "system" fn windows_monitor_wnd_proc(
         WM_POWERBROADCAST => {
             if wparam as u32 == PBT_POWERSETTINGCHANGE {
                 let setting = &*(lparam as *const POWERBROADCAST_SETTING);
-                if guid_equals(&setting.PowerSetting, &GUID_ACDC_POWER_SOURCE)
-                    || guid_equals(&setting.PowerSetting, &GUID_CONSOLE_DISPLAY_STATE)
-                {
+                if guid_equals(&setting.PowerSetting, &GUID_ACDC_POWER_SOURCE) {
+                    windows_handle_direct_charging_event(hwnd, setting);
+                } else if guid_equals(&setting.PowerSetting, &GUID_CONSOLE_DISPLAY_STATE) {
                     windows_mark_dirty(hwnd);
                 }
             }
@@ -537,8 +564,35 @@ unsafe fn windows_mark_dirty(hwnd: HWND) {
 }
 
 #[cfg(windows)]
+unsafe fn windows_handle_direct_charging_event(hwnd: HWND, setting: &POWERBROADCAST_SETTING) {
+    let context_ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut WindowsMonitorContext;
+    if context_ptr.is_null() {
+        return;
+    }
+
+    if let Some(connected) = windows_charging_state_from_power_setting(setting) {
+        let _ = (*context_ptr).direct_tx.send((PortKind::Charging, connected));
+    }
+}
+
+#[cfg(windows)]
+fn windows_charging_state_from_power_setting(setting: &POWERBROADCAST_SETTING) -> Option<bool> {
+    if setting.DataLength < 1 {
+        return None;
+    }
+
+    let power_source = unsafe { *setting.Data.as_ptr() };
+    match power_source {
+        0 => Some(true),
+        1 | 2 => Some(false),
+        _ => None,
+    }
+}
+
+#[cfg(windows)]
 struct WindowsMonitorContext {
     dirty_event: HANDLE,
+    direct_tx: mpsc::Sender<(PortKind, bool)>,
 }
 
 #[cfg(windows)]
