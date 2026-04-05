@@ -1,4 +1,5 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+#[cfg(not(target_os = "macos"))]
 use hidapi::{HidApi, HidDevice};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -135,22 +136,28 @@ impl DetectorHandle {
 }
 
 pub fn accelerometer_available() -> bool {
+    #[cfg(target_os = "macos")]
+    if apple_spu::probe() {
+        return true;
+    }
+
     #[cfg(target_os = "linux")]
     if discover_linux_iio_sensor().is_some() {
         return true;
     }
 
-    let api = match HidApi::new() {
-        Ok(api) => api,
-        Err(_) => return false,
-    };
-
-    #[cfg(target_os = "macos")]
-    if discover_apple_silicon_sensor(&api).is_some() {
-        return true;
+    #[cfg(not(target_os = "macos"))]
+    {
+        let api = match HidApi::new() {
+            Ok(api) => api,
+            Err(_) => return false,
+        };
+        if discover_sensor_device_with_api(&api).is_some() {
+            return true;
+        }
     }
 
-    discover_sensor_device_with_api(&api).is_some()
+    false
 }
 
 fn build_accelerometer_detector(
@@ -197,16 +204,22 @@ struct IioSensor {
 }
 
 enum AccelBackend {
+    #[cfg(not(target_os = "macos"))]
     GenericHid(HidDevice),
     #[cfg(target_os = "macos")]
-    AppleSilicon(HidDevice),
+    AppleSilicon(apple_spu::SpuAccel),
     #[cfg(target_os = "linux")]
     LinuxIio(IioSensor),
 }
 
-/// Try platform-specific accelerometer APIs first, then fall back to generic
-/// HID sensor discovery.
 fn discover_accel_backend() -> Option<AccelBackend> {
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(spu) = apple_spu::SpuAccel::open() {
+            return Some(AccelBackend::AppleSilicon(spu));
+        }
+    }
+
     #[cfg(target_os = "linux")]
     {
         if let Some(iio) = discover_linux_iio_sensor() {
@@ -214,33 +227,29 @@ fn discover_accel_backend() -> Option<AccelBackend> {
         }
     }
 
-    let api = HidApi::new().ok()?;
-
-    #[cfg(target_os = "macos")]
+    #[cfg(not(target_os = "macos"))]
     {
-        if let Some(device) = discover_apple_silicon_sensor(&api) {
-            return Some(AccelBackend::AppleSilicon(device));
-        }
+        let api = HidApi::new().ok()?;
+        let device = discover_sensor_device_with_api(&api)?;
+        return Some(AccelBackend::GenericHid(device));
     }
 
-    let device = discover_sensor_device_with_api(&api)?;
-    Some(AccelBackend::GenericHid(device))
+    #[cfg(target_os = "macos")]
+    None
 }
 
 struct AccelReading {
     sample: [f32; 3],
-    /// Pre-computed peak inter-sample delta from a high-frequency buffer
-    /// (Apple Silicon IMU at 800 Hz).  0.0 means the caller should compute
-    /// the delta from its own `last_sample`.
     peak_motion: f32,
 }
 
 fn read_backend_sample(backend: &AccelBackend) -> Option<AccelReading> {
     match backend {
+        #[cfg(not(target_os = "macos"))]
         AccelBackend::GenericHid(device) => read_sensor_sample(device)
             .map(|s| AccelReading { sample: s, peak_motion: 0.0 }),
         #[cfg(target_os = "macos")]
-        AccelBackend::AppleSilicon(device) => read_apple_silicon_reading(device),
+        AccelBackend::AppleSilicon(spu) => spu.read(),
         #[cfg(target_os = "linux")]
         AccelBackend::LinuxIio(sensor) => read_iio_sample(sensor)
             .map(|s| AccelReading { sample: s, peak_motion: 0.0 }),
@@ -249,111 +258,431 @@ fn read_backend_sample(backend: &AccelBackend) -> Option<AccelReading> {
 
 // ── Apple Silicon (M1 Pro / M2+) ──────────────────────────────────
 //
-// Uses the undocumented AppleSPUHIDDevice (Bosch BMI286 IMU managed by the
-// Sensor Processing Unit).  The sensor is exposed as a vendor-specific HID
-// device with usage page 0xFF00, usage 3.  Reports are 22 bytes with x/y/z
-// as int32 little-endian at offsets 6, 10, 14 (divide by 65536 → g).
+// Uses raw IOKit to talk to AppleSPUHIDDevice — the Bosch BMI286 IMU
+// managed by the Sensor Processing Unit.  Reports are 22 bytes with
+// x/y/z as int32 LE at offsets 6/10/14 (÷65536 → g).
 //
-// Requires elevated privileges on most setups (the device is protected by
-// the kernel).  If the open fails the detector falls back to generic HID
-// and then to the microphone.
+// Before reading, the SPU driver must be woken by setting three
+// IORegistry properties (ReportingState, PowerState, ReportInterval)
+// on AppleSPUHIDDriver services.  hidapi can't do this — we call the
+// IOKit C API directly.
 
 #[cfg(target_os = "macos")]
-fn discover_apple_silicon_sensor(api: &HidApi) -> Option<HidDevice> {
-    for info in api.device_list() {
-        if info.usage_page() != 0xFF00 {
-            continue;
-        }
+mod apple_spu {
+    use super::AccelReading;
+    use std::ffi::{c_char, c_int, c_void, CStr};
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
 
-        let product = info.product_string().unwrap_or("?");
-        let usage = info.usage();
-        eprintln!(
-            "[accel] candidate: usage_page=0xFF00 usage={} product={:?}",
-            usage, product
+    // IOKit C types
+    type IOReturn = i32;
+    type MachPort = u32;
+    type IOServiceT = u32;
+    type IOIteratorT = u32;
+    type IOHIDDeviceRef = *mut c_void;
+    type CFAllocatorRef = *const c_void;
+    type CFDictionaryRef = *const c_void;
+    type CFStringRef = *const c_void;
+    type CFNumberRef = *const c_void;
+    type CFTypeRef = *const c_void;
+    type CFRunLoopRef = *const c_void;
+    type CFRunLoopMode = CFStringRef;
+
+    const K_IO_MAIN_PORT_DEFAULT: MachPort = 0;
+    const K_CF_ALLOCATOR_DEFAULT: CFAllocatorRef = std::ptr::null();
+    const K_CF_NUMBER_SINT32_TYPE: i64 = 3;
+    const K_CF_STRING_ENCODING_UTF8: u32 = 0x0800_0100;
+    const IMU_REPORT_LEN: usize = 22;
+    const IMU_DATA_OFF: usize = 6;
+    const ACCEL_USAGE_PAGE: u32 = 0xFF00;
+    const ACCEL_USAGE: u32 = 3;
+    const REPORT_BUF_SZ: usize = 256;
+
+    #[link(name = "IOKit", kind = "framework")]
+    extern "C" {
+        fn IOServiceMatching(name: *const c_char) -> CFDictionaryRef;
+        fn IOServiceGetMatchingServices(
+            main_port: MachPort,
+            matching: CFDictionaryRef,
+            existing: *mut IOIteratorT,
+        ) -> IOReturn;
+        fn IOIteratorNext(iterator: IOIteratorT) -> IOServiceT;
+        fn IOObjectRelease(object: u32) -> IOReturn;
+        fn IORegistryEntrySetCFProperty(
+            entry: IOServiceT,
+            key: CFStringRef,
+            value: CFTypeRef,
+        ) -> IOReturn;
+        fn IORegistryEntryCreateCFProperty(
+            entry: IOServiceT,
+            key: CFStringRef,
+            allocator: CFAllocatorRef,
+            options: u32,
+        ) -> CFTypeRef;
+        fn IOHIDDeviceCreate(
+            allocator: CFAllocatorRef,
+            service: IOServiceT,
+        ) -> IOHIDDeviceRef;
+        fn IOHIDDeviceOpen(device: IOHIDDeviceRef, options: u32) -> IOReturn;
+        fn IOHIDDeviceClose(device: IOHIDDeviceRef, options: u32) -> IOReturn;
+        fn IOHIDDeviceRegisterInputReportCallback(
+            device: IOHIDDeviceRef,
+            report: *mut u8,
+            report_length: usize,
+            callback: unsafe extern "C" fn(
+                context: *mut c_void,
+                result: IOReturn,
+                sender: *mut c_void,
+                report_type: u32,
+                report_id: u32,
+                report: *mut u8,
+                report_length: usize,
+            ),
+            context: *mut c_void,
         );
+        fn IOHIDDeviceScheduleWithRunLoop(
+            device: IOHIDDeviceRef,
+            run_loop: CFRunLoopRef,
+            mode: CFRunLoopMode,
+        );
+        fn IOHIDDeviceUnscheduleFromRunLoop(
+            device: IOHIDDeviceRef,
+            run_loop: CFRunLoopRef,
+            mode: CFRunLoopMode,
+        );
+    }
 
-        let device = match info.open_device(api) {
-            Ok(d) => d,
-            Err(e) => {
-                eprintln!("[accel]   open failed: {}", e);
-                continue;
+    #[link(name = "CoreFoundation", kind = "framework")]
+    extern "C" {
+        fn CFRunLoopGetCurrent() -> CFRunLoopRef;
+        fn CFRunLoopRunInMode(
+            mode: CFRunLoopMode,
+            seconds: f64,
+            return_after_source_handled: u8,
+        ) -> i32;
+        fn CFRunLoopStop(rl: CFRunLoopRef);
+        fn CFStringCreateWithCString(
+            alloc: CFAllocatorRef,
+            c_str: *const c_char,
+            encoding: u32,
+        ) -> CFStringRef;
+        fn CFNumberCreate(
+            alloc: CFAllocatorRef,
+            the_type: i64,
+            value_ptr: *const c_void,
+        ) -> CFNumberRef;
+        fn CFNumberGetValue(
+            number: CFNumberRef,
+            the_type: i64,
+            value_ptr: *mut c_void,
+        ) -> u8;
+        fn CFRelease(cf: CFTypeRef);
+        static kCFRunLoopDefaultMode: CFRunLoopMode;
+    }
+
+    fn cfstr(s: &[u8]) -> CFStringRef {
+        unsafe {
+            CFStringCreateWithCString(
+                K_CF_ALLOCATOR_DEFAULT,
+                s.as_ptr() as *const c_char,
+                K_CF_STRING_ENCODING_UTF8,
+            )
+        }
+    }
+
+    fn cfnum32(v: i32) -> CFNumberRef {
+        unsafe {
+            CFNumberCreate(
+                K_CF_ALLOCATOR_DEFAULT,
+                K_CF_NUMBER_SINT32_TYPE,
+                &v as *const i32 as *const c_void,
+            )
+        }
+    }
+
+    fn get_u32_property(service: IOServiceT, key: &[u8]) -> Option<u32> {
+        unsafe {
+            let k = cfstr(key);
+            let prop = IORegistryEntryCreateCFProperty(
+                service, k, K_CF_ALLOCATOR_DEFAULT, 0,
+            );
+            CFRelease(k as CFTypeRef);
+            if prop.is_null() {
+                return None;
+            }
+            let mut val: i32 = 0;
+            let ok = CFNumberGetValue(
+                prop as CFNumberRef,
+                K_CF_NUMBER_SINT32_TYPE,
+                &mut val as *mut i32 as *mut c_void,
+            );
+            CFRelease(prop);
+            if ok != 0 { Some(val as u32) } else { None }
+        }
+    }
+
+    /// Wake all SPU drivers so the sensor starts streaming.
+    fn wake_spu_drivers() {
+        unsafe {
+            let matching = IOServiceMatching(
+                b"AppleSPUHIDDriver\0".as_ptr() as *const c_char,
+            );
+            if matching.is_null() {
+                return;
+            }
+            let mut iter: IOIteratorT = 0;
+            if IOServiceGetMatchingServices(
+                K_IO_MAIN_PORT_DEFAULT, matching, &mut iter,
+            ) != 0 {
+                return;
+            }
+            loop {
+                let svc = IOIteratorNext(iter);
+                if svc == 0 { break; }
+                for (key, val) in [
+                    (b"SensorPropertyReportingState\0", 1i32),
+                    (b"SensorPropertyPowerState\0", 1i32),
+                    (b"ReportInterval\0", 1000i32),
+                ] {
+                    let k = cfstr(key);
+                    let v = cfnum32(val);
+                    IORegistryEntrySetCFProperty(svc, k, v as CFTypeRef);
+                    CFRelease(k as CFTypeRef);
+                    CFRelease(v as CFTypeRef);
+                }
+                IOObjectRelease(svc);
+            }
+            IOObjectRelease(iter);
+        }
+    }
+
+    /// Find the AppleSPUHIDDevice service for the accelerometer.
+    fn find_accel_service() -> Option<IOServiceT> {
+        unsafe {
+            let matching = IOServiceMatching(
+                b"AppleSPUHIDDevice\0".as_ptr() as *const c_char,
+            );
+            if matching.is_null() {
+                return None;
+            }
+            let mut iter: IOIteratorT = 0;
+            if IOServiceGetMatchingServices(
+                K_IO_MAIN_PORT_DEFAULT, matching, &mut iter,
+            ) != 0 {
+                return None;
+            }
+            loop {
+                let svc = IOIteratorNext(iter);
+                if svc == 0 { break; }
+                let page = get_u32_property(svc, b"PrimaryUsagePage\0");
+                let usage = get_u32_property(svc, b"PrimaryUsage\0");
+                if page == Some(ACCEL_USAGE_PAGE) && usage == Some(ACCEL_USAGE) {
+                    IOObjectRelease(iter);
+                    return Some(svc);
+                }
+                IOObjectRelease(svc);
+            }
+            IOObjectRelease(iter);
+            None
+        }
+    }
+
+    /// Check if the Apple Silicon accelerometer is available.
+    pub fn probe() -> bool {
+        eprintln!("[spu] waking SPU drivers...");
+        wake_spu_drivers();
+        let svc = match find_accel_service() {
+            Some(s) => {
+                eprintln!("[spu] found accel service: {}", s);
+                s
+            }
+            None => {
+                eprintln!("[spu] no AppleSPUHIDDevice with accel usage found");
+                return false;
             }
         };
-
-        // Read two reports and verify:
-        // 1. Magnitude near 1g (real accelerometer at rest)
-        // 2. Values actually change (real sensor has jitter, a static
-        //    device returns the exact same bytes every time)
-        let r1 = read_apple_silicon_reading(&device);
-        // Small delay to let the sensor buffer a new report
-        std::thread::sleep(Duration::from_millis(20));
-        let r2 = read_apple_silicon_reading(&device);
-
-        if let (Some(r1), Some(r2)) = (r1, r2) {
-            let mag = (r1.sample[0] * r1.sample[0]
-                + r1.sample[1] * r1.sample[1]
-                + r1.sample[2] * r1.sample[2])
-            .sqrt();
-
-            let changed = r1.sample[0] != r2.sample[0]
-                || r1.sample[1] != r2.sample[1]
-                || r1.sample[2] != r2.sample[2];
-
-            eprintln!(
-                "[accel]   mag={:.3}g changed={} sample={:.4},{:.4},{:.4}",
-                mag, changed, r1.sample[0], r1.sample[1], r1.sample[2]
-            );
-
-            // Real accelerometer: ~1g at rest, values jitter slightly.
-            if mag > 0.7 && mag < 1.5 && changed {
-                eprintln!("[accel]   ACCEPTED as accelerometer");
-                return Some(device);
+        unsafe {
+            let hid = IOHIDDeviceCreate(K_CF_ALLOCATOR_DEFAULT, svc);
+            IOObjectRelease(svc);
+            if hid.is_null() {
+                eprintln!("[spu] IOHIDDeviceCreate returned null");
+                return false;
             }
+            let kr = IOHIDDeviceOpen(hid, 0);
+            eprintln!("[spu] IOHIDDeviceOpen returned: {}", kr);
+            if kr == 0 {
+                IOHIDDeviceClose(hid, 0);
+            }
+            CFRelease(hid as CFTypeRef);
+            kr == 0
         }
     }
 
-    None
-}
+    struct CallbackState {
+        latest: [f32; 3],
+        prev: [f32; 3],
+        peak_motion: f32,
+        has_data: bool,
+        report_count: u32,
+    }
 
-#[cfg(target_os = "macos")]
-fn read_apple_silicon_reading(device: &HidDevice) -> Option<AccelReading> {
-    let mut buf = [0u8; 64];
-    let mut prev: Option<[f32; 3]> = None;
-    let mut latest: Option<[f32; 3]> = None;
-    let mut peak_motion: f32 = 0.0;
+    unsafe extern "C" fn report_callback(
+        context: *mut c_void,
+        _result: IOReturn,
+        _sender: *mut c_void,
+        _report_type: u32,
+        _report_id: u32,
+        report: *mut u8,
+        report_length: usize,
+    ) {
+        if report_length < IMU_REPORT_LEN || context.is_null() {
+            return;
+        }
+        let state = &*(context as *const Mutex<CallbackState>);
+        let data = std::slice::from_raw_parts(report, report_length);
 
-    // The IMU runs at ~800 Hz → ~13 reports per 16 ms polling interval.
-    // Process ALL buffered reports and track the maximum inter-sample
-    // delta.  A slap lasting <10 ms is captured in the 800 Hz data even
-    // if it falls entirely between two 16 ms polling points.
-    for i in 0..128u32 {
-        let timeout = if i == 0 && latest.is_none() { 50 } else { 0 };
-        match device.read_timeout(&mut buf, timeout) {
-            Ok(len) if len >= 18 => {
-                if let Some(sample) = decode_apple_silicon_report(&buf[..len]) {
-                    if let Some(p) = prev {
-                        peak_motion = peak_motion.max(vector_delta(p, sample));
+        let x = i32::from_le_bytes([
+            data[IMU_DATA_OFF], data[IMU_DATA_OFF + 1],
+            data[IMU_DATA_OFF + 2], data[IMU_DATA_OFF + 3],
+        ]) as f32 / 65536.0;
+        let y = i32::from_le_bytes([
+            data[IMU_DATA_OFF + 4], data[IMU_DATA_OFF + 5],
+            data[IMU_DATA_OFF + 6], data[IMU_DATA_OFF + 7],
+        ]) as f32 / 65536.0;
+        let z = i32::from_le_bytes([
+            data[IMU_DATA_OFF + 8], data[IMU_DATA_OFF + 9],
+            data[IMU_DATA_OFF + 10], data[IMU_DATA_OFF + 11],
+        ]) as f32 / 65536.0;
+
+        if let Ok(mut s) = state.lock() {
+            s.report_count += 1;
+            if s.report_count <= 3 {
+                eprintln!(
+                    "[spu] report #{}: x={:.4} y={:.4} z={:.4} len={}",
+                    s.report_count, x, y, z, report_length
+                );
+            }
+            if s.has_data {
+                let dx = x - s.latest[0];
+                let dy = y - s.latest[1];
+                let dz = z - s.latest[2];
+                let delta = (dx * dx + dy * dy + dz * dz).sqrt();
+                s.peak_motion = s.peak_motion.max(delta);
+            }
+            s.prev = s.latest;
+            s.latest = [x, y, z];
+            s.has_data = true;
+        }
+    }
+
+    pub struct SpuAccel {
+        state: Arc<Mutex<CallbackState>>,
+        // Keep the thread alive; when SpuAccel is dropped the thread
+        // stops via the Arc refcount going to zero.
+        _thread: std::thread::JoinHandle<()>,
+    }
+
+    impl SpuAccel {
+        pub fn open() -> Option<Self> {
+            eprintln!("[spu] SpuAccel::open starting...");
+            wake_spu_drivers();
+            let svc = find_accel_service()?;
+            eprintln!("[spu] opening device for streaming...");
+
+            let state = Arc::new(Mutex::new(CallbackState {
+                latest: [0.0; 3],
+                prev: [0.0; 3],
+                peak_motion: 0.0,
+                has_data: false,
+                report_count: 0,
+            }));
+            let state_clone = state.clone();
+            let (ready_tx, ready_rx) = std::sync::mpsc::channel();
+
+            let thread = std::thread::spawn(move || unsafe {
+                let hid = IOHIDDeviceCreate(K_CF_ALLOCATOR_DEFAULT, svc);
+                IOObjectRelease(svc);
+                if hid.is_null() {
+                    eprintln!("[spu] IOHIDDeviceCreate returned null in thread");
+                    let _ = ready_tx.send(false);
+                    return;
+                }
+                let kr = IOHIDDeviceOpen(hid, 0);
+                if kr != 0 {
+                    eprintln!("[spu] IOHIDDeviceOpen failed in thread: {}", kr);
+                    CFRelease(hid as CFTypeRef);
+                    let _ = ready_tx.send(false);
+                    return;
+                }
+                eprintln!("[spu] device opened, registering callback...");
+
+                let mut report_buf = vec![0u8; REPORT_BUF_SZ];
+                let state_ptr = Arc::into_raw(state_clone) as *mut c_void;
+
+                IOHIDDeviceRegisterInputReportCallback(
+                    hid,
+                    report_buf.as_mut_ptr(),
+                    report_buf.len(),
+                    report_callback,
+                    state_ptr,
+                );
+
+                let rl = CFRunLoopGetCurrent();
+                IOHIDDeviceScheduleWithRunLoop(hid, rl, kCFRunLoopDefaultMode);
+
+                let _ = ready_tx.send(true);
+
+                // Run until the Arc is the last reference (SpuAccel dropped).
+                loop {
+                    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.25, 0);
+                    // Check if we're the only holder of the Arc.
+                    let raw = state_ptr as *const Mutex<CallbackState>;
+                    if Arc::strong_count(&Arc::from_raw(raw)) <= 1 {
+                        // Re-leak so we can clean up below.
+                        let _ = Arc::into_raw(Arc::from_raw(raw));
+                        break;
                     }
-                    prev = Some(sample);
-                    latest = Some(sample);
+                    // Re-leak — we only peeked.
+                    let _ = Arc::into_raw(Arc::from_raw(raw));
+                }
+
+                IOHIDDeviceUnscheduleFromRunLoop(hid, rl, kCFRunLoopDefaultMode);
+                IOHIDDeviceClose(hid, 0);
+                CFRelease(hid as CFTypeRef);
+                // Drop the Arc we leaked into the callback.
+                drop(Arc::from_raw(state_ptr as *const Mutex<CallbackState>));
+                let _ = report_buf; // prevent drop before callback done
+            });
+
+            match ready_rx.recv_timeout(Duration::from_secs(2)) {
+                Ok(true) => {
+                    eprintln!("[spu] SpuAccel ready, streaming started");
+                    Some(SpuAccel { state, _thread: thread })
+                }
+                Ok(false) => {
+                    eprintln!("[spu] SpuAccel failed to open in thread");
+                    None
+                }
+                Err(_) => {
+                    eprintln!("[spu] SpuAccel timed out waiting for thread");
+                    None
                 }
             }
-            _ => break,
+        }
+
+        pub fn read(&self) -> Option<AccelReading> {
+            let mut s = self.state.lock().ok()?;
+            if !s.has_data {
+                return None;
+            }
+            let reading = AccelReading {
+                sample: s.latest,
+                peak_motion: s.peak_motion,
+            };
+            s.peak_motion = 0.0;
+            Some(reading)
         }
     }
-
-    latest.map(|sample| AccelReading { sample, peak_motion })
-}
-
-#[cfg(target_os = "macos")]
-fn decode_apple_silicon_report(report: &[u8]) -> Option<[f32; 3]> {
-    if report.len() < 18 {
-        return None;
-    }
-    let x = i32::from_le_bytes(report[6..10].try_into().ok()?) as f32 / 65536.0;
-    let y = i32::from_le_bytes(report[10..14].try_into().ok()?) as f32 / 65536.0;
-    let z = i32::from_le_bytes(report[14..18].try_into().ok()?) as f32 / 65536.0;
-    Some([x, y, z])
 }
 
 // ── Linux IIO subsystem ───────────────────────────────────────────
@@ -584,14 +913,6 @@ fn run_accelerometer_loop(
         }
 
         if let Some(reading) = read_backend_sample(&backend) {
-            if warmup_count < 5 {
-                eprintln!(
-                    "[accel] sample={:.4},{:.4},{:.4} peak_motion={:.6}",
-                    reading.sample[0], reading.sample[1], reading.sample[2],
-                    reading.peak_motion
-                );
-            }
-
             // ── Apply high-pass filter to remove gravity ──────────
             if !hp_initialized {
                 hp_prev_raw = reading.sample;
@@ -639,13 +960,6 @@ fn run_accelerometer_loop(
             // or the 800 Hz peak delta exceeds the threshold.
             let effective_motion = motion.max(reading.peak_motion);
 
-            if ratio > 2.0 || effective_motion > 0.02 {
-                eprintln!(
-                    "[accel] filtered={:.5} peak={:.5} ratio={:.2} thresh={:.3}",
-                    motion, reading.peak_motion, ratio, accel_threshold
-                );
-            }
-
             if ratio > STA_LTA_RATIO && effective_motion >= accel_threshold {
                 let now = Instant::now();
                 let elapsed = now.duration_since(last_trigger).as_millis() as u64;
@@ -667,6 +981,7 @@ fn run_accelerometer_loop(
     Ok(())
 }
 
+#[cfg(not(target_os = "macos"))]
 fn discover_sensor_device_with_api(api: &HidApi) -> Option<HidDevice> {
     let mut candidates = Vec::new();
 
@@ -691,14 +1006,20 @@ fn discover_sensor_device_with_api(api: &HidApi) -> Option<HidDevice> {
 
     for device_info in candidates {
         if let Ok(device) = device_info.open_device(api) {
-            if let Some(sample) = read_sensor_sample(&device) {
-                // Sanity check: a stationary accelerometer reads ~1 g.
-                // Reject readings that are clearly not acceleration data.
+            let s1 = read_sensor_sample(&device);
+            std::thread::sleep(Duration::from_millis(30));
+            let s2 = read_sensor_sample(&device);
+            if let (Some(sample), Some(sample2)) = (s1, s2) {
                 let mag = (sample[0] * sample[0]
                     + sample[1] * sample[1]
                     + sample[2] * sample[2])
                 .sqrt();
-                if mag > 0.5 && mag < 3.0 {
+                // Real accelerometer: ~1g at rest AND data jitters between reads.
+                // Static HID endpoints return identical bytes every time.
+                let changed = sample[0] != sample2[0]
+                    || sample[1] != sample2[1]
+                    || sample[2] != sample2[2];
+                if mag > 0.7 && mag < 1.5 && changed {
                     return Some(device);
                 }
             }
@@ -708,6 +1029,7 @@ fn discover_sensor_device_with_api(api: &HidApi) -> Option<HidDevice> {
     None
 }
 
+#[cfg(not(target_os = "macos"))]
 fn read_sensor_sample(device: &HidDevice) -> Option<[f32; 3]> {
     for report_id in [1_u8, 0_u8, 2_u8] {
         let mut buf = [0u8; 64];
@@ -723,6 +1045,7 @@ fn read_sensor_sample(device: &HidDevice) -> Option<[f32; 3]> {
     None
 }
 
+#[cfg(not(target_os = "macos"))]
 fn decode_sensor_sample(report: &[u8]) -> Option<[f32; 3]> {
     let payload = report.get(1..)?;
 
@@ -739,10 +1062,3 @@ fn decode_sensor_sample(report: &[u8]) -> Option<[f32; 3]> {
     }
 }
 
-#[cfg(target_os = "macos")]
-fn vector_delta(prev: [f32; 3], curr: [f32; 3]) -> f32 {
-    let dx = curr[0] - prev[0];
-    let dy = curr[1] - prev[1];
-    let dz = curr[2] - prev[2];
-    (dx * dx + dy * dy + dz * dz).sqrt()
-}
