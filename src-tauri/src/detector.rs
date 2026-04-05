@@ -401,9 +401,11 @@ fn build_microphone_detector(
 
     // ~20 callbacks ≈ 400 ms at 48 kHz / 1024-sample buffers
     const CALIBRATION_CALLBACKS: u32 = 20;
-    // Crest factor (peak / RMS) threshold — slaps are impulsive (>1.8),
-    // steady noise is lower (~1.4 for Gaussian).
-    const CREST_FACTOR_MIN: f32 = 1.8;
+    // Crest factor (peak / RMS) threshold — a physical slap is extremely
+    // impulsive (crest 4–10).  Speaker playback of moans/voice sits around
+    // 1.5–2.0.  Setting this to 2.5 cleanly separates the two without
+    // needing aggressive suppression.
+    const CREST_FACTOR_MIN: f32 = 2.5;
     // The spike must exceed the noise floor by this factor.
     const NOISE_FLOOR_FACTOR: f32 = 3.0;
 
@@ -445,9 +447,8 @@ fn build_microphone_detector(
                 //    sound is likely still playing through the speakers ──
                 let now = Instant::now();
                 if now < s.suppress_until {
-                    // While suppressed, keep the noise floor elevated so the
-                    // playing sound becomes the baseline.
-                    s.noise_floor = s.noise_floor.max(rms);
+                    // Freeze the noise floor during suppression — don't
+                    // adapt it up (would block subsequent slaps) or down.
                     return;
                 }
 
@@ -470,14 +471,11 @@ fn build_microphone_detector(
                     let elapsed = now.duration_since(s.last_trigger).as_millis() as u64;
                     if elapsed >= cooldown_ms {
                         s.last_trigger = now;
-                        // Suppress detection while the sound plays back.
-                        // Most moan clips are 2-5 s; cooldown covers part of
-                        // that, so add 3 s on top of cooldown.
+                        // Minimal suppression — just long enough for the
+                        // speaker's initial pop to pass without re-triggering.
+                        // The noise floor boost handles the rest.
                         s.suppress_until =
-                            now + Duration::from_millis(cooldown_ms + 3000);
-                        // Boost noise floor so the playing sound doesn't
-                        // look like a spike when suppression ends.
-                        s.noise_floor = s.noise_floor.max(rms);
+                            now + Duration::from_millis(cooldown_ms);
                         drop(s);
                         let intensity = (rms / 0.5).min(1.0);
                         on_slap(intensity);
