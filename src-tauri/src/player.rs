@@ -1,9 +1,10 @@
 use rand::seq::SliceRandom;
-use rodio::{Decoder, OutputStream, Sink};
+use rodio::{Decoder, OutputStream, Sink, Source};
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
+use std::time::{Duration, Instant};
 
 struct PlayCmd {
     bundle: String,
@@ -18,11 +19,12 @@ pub struct PlayerHandle {
 }
 
 impl PlayerHandle {
-    pub fn new(sounds_dir: PathBuf) -> Self {
+    pub fn new(sounds_dir: PathBuf, playback_suppress_until: Arc<Mutex<Instant>>) -> Self {
         fs::create_dir_all(&sounds_dir).ok();
 
         let (cmd_tx, cmd_rx) = mpsc::channel::<PlayCmd>();
         let dir = sounds_dir.clone();
+        let suppress_ref = playback_suppress_until;
 
         std::thread::spawn(move || {
             let (_stream, stream_handle) = match OutputStream::try_default() {
@@ -68,6 +70,21 @@ impl PlayerHandle {
                                 let reader = BufReader::new(f);
                                 match Decoder::new(reader) {
                                     Ok(source) => {
+                                        // Tell the mic detector to stand down while
+                                        // this sound is playing, otherwise our own
+                                        // speaker output re-triggers detection and
+                                        // chains into another sound.
+                                        // Cap the mute window so importing a
+                                        // long track cannot deafen the mic for
+                                        // its entire runtime.
+                                        let play_for = source
+                                            .total_duration()
+                                            .unwrap_or(Duration::from_secs(4))
+                                            .min(Duration::from_secs(3))
+                                            + Duration::from_millis(250);
+                                        if let Ok(mut suppress) = suppress_ref.lock() {
+                                            *suppress = Instant::now() + play_for;
+                                        }
                                         // Stop previous sound
                                         if let Some(old) = current_sink.take() {
                                             old.stop();

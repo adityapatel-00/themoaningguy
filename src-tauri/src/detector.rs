@@ -47,9 +47,15 @@ enum ActiveDetector {
 
 impl DetectorHandle {
     /// Spawn the detector on a dedicated thread.
-    pub fn spawn(on_slap: impl Fn(f32) + Send + Sync + 'static) -> Self {
+    /// `playback_suppress_until` is shared with the player: while our own
+    /// sound is playing, mic input is ignored so it can't re-trigger.
+    pub fn spawn(
+        on_slap: impl Fn(f32) + Send + Sync + 'static,
+        playback_suppress_until: Arc<Mutex<Instant>>,
+    ) -> Self {
         let (cmd_tx, cmd_rx) = mpsc::channel::<DetectorCmd>();
         let on_slap = Arc::new(on_slap);
+        let suppress_ref = playback_suppress_until;
 
         thread::spawn(move || {
             let mut runtime: Option<ActiveDetector> = None;
@@ -69,6 +75,7 @@ impl DetectorHandle {
                                     threshold,
                                     cooldown_ms,
                                     on_slap.clone(),
+                                    suppress_ref.clone(),
                                 )
                                 .map(Some)
                                 .unwrap_or_else(|e| {
@@ -92,6 +99,7 @@ impl DetectorHandle {
                                             threshold,
                                             cooldown_ms,
                                             on_slap.clone(),
+                                            suppress_ref.clone(),
                                         )
                                         .map(Some)
                                         .unwrap_or_else(|fallback_err| {
@@ -741,6 +749,7 @@ fn build_microphone_detector(
     threshold: f32,
     cooldown_ms: u64,
     on_slap: Arc<dyn Fn(f32) + Send + Sync>,
+    playback_suppress_until: Arc<Mutex<Instant>>,
 ) -> Result<ActiveDetector, String> {
     let host = cpal::default_host();
     let device = host
@@ -815,6 +824,16 @@ fn build_microphone_detector(
                     // adapt it up (would block subsequent slaps) or down.
                     return;
                 }
+                // ── External playback suppression: a port rule, test, or
+                //    tray sound started playback from another path, which
+                //    never arms the window above. Without this, the speaker
+                //    output re-triggers detection and chains another sound.
+                if now < *playback_suppress_until
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                {
+                    return;
+                }
 
                 // ── Adapt noise floor from non-spike samples (slow EMA) ──
                 if rms < s.noise_floor * 2.5 {
@@ -841,8 +860,10 @@ fn build_microphone_detector(
                         s.suppress_until =
                             now + Duration::from_millis(cooldown_ms);
                         drop(s);
-                        let intensity = (rms / 0.5).min(1.0);
-                        on_slap(intensity);
+                        // Fixed intensity: every trigger plays at the user's
+                        // volume-slider level. Force-scaled volume made
+                        // identical claps play randomly quiet or loud.
+                        on_slap(1.0);
                     }
                 }
             },
@@ -949,12 +970,10 @@ fn run_accelerometer_loop(
                 let elapsed = now.duration_since(last_trigger).as_millis() as u64;
                 if elapsed >= cooldown_ms {
                     last_trigger = now;
-                    // Logarithmic volume scaling similar to spank:
-                    // map [0.05, 0.80]g → intensity [0.15, 1.0]
-                    let intensity = ((effective_motion / 0.05).ln()
-                        / (0.80f32 / 0.05).ln())
-                    .clamp(0.15, 1.0);
-                    on_slap(intensity);
+                    // Fixed intensity: every trigger plays at the user's
+                    // volume-slider level. Force-scaled volume made
+                    // identical slaps play randomly quiet or loud.
+                    on_slap(1.0);
                 }
             }
         }
