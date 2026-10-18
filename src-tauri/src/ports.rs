@@ -111,7 +111,17 @@ impl PortKind {
 #[serde(rename_all = "camelCase")]
 pub struct PortRule {
     pub kind: PortKind,
+    /// Shared fallback bundle, kept for settings saved before per-trigger
+    /// bundles existed.
     pub bundle: String,
+    /// Bundle played when a device of this kind is plugged in. Empty means
+    /// fall back to `bundle`.
+    #[serde(default)]
+    pub connect_bundle: String,
+    /// Bundle played when a device of this kind is removed. Empty means fall
+    /// back to `bundle`.
+    #[serde(default)]
+    pub disconnect_bundle: String,
     pub on_connect: bool,
     pub on_disconnect: bool,
 }
@@ -121,8 +131,25 @@ impl PortRule {
         Self {
             kind,
             bundle: "default".to_string(),
+            connect_bundle: String::new(),
+            disconnect_bundle: String::new(),
             on_connect: false,
             on_disconnect: false,
+        }
+    }
+
+    /// Bundle to play for a connect/disconnect event, preferring the
+    /// per-trigger bundle and falling back to the shared one.
+    pub fn bundle_for(&self, connected: bool) -> &str {
+        let specific = if connected {
+            &self.connect_bundle
+        } else {
+            &self.disconnect_bundle
+        };
+        if specific.trim().is_empty() {
+            &self.bundle
+        } else {
+            specific
         }
     }
 }
@@ -259,7 +286,7 @@ pub fn port_monitor_mode_label() -> &'static str {
 
     #[cfg(all(target_os = "linux", feature = "linux-udev"))]
     {
-        "Event-driven (udev) with snapshot fallback"
+        "udev events"
     }
 
     #[cfg(all(target_os = "linux", not(feature = "linux-udev")))]
@@ -269,7 +296,7 @@ pub fn port_monitor_mode_label() -> &'static str {
 
     #[cfg(target_os = "macos")]
     {
-        "Event-driven (IOKit) with snapshot fallback"
+        "IOKit events"
     }
 
     #[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
@@ -1360,6 +1387,12 @@ pub fn update_rule_bundle(rules: &mut [PortRule], old_name: &str, new_name: &str
     for rule in rules.iter_mut() {
         if rule.bundle == old_name {
             rule.bundle = new_name.to_string();
+        }
+        if rule.connect_bundle == old_name {
+            rule.connect_bundle = new_name.to_string();
+        }
+        if rule.disconnect_bundle == old_name {
+            rule.disconnect_bundle = new_name.to_string();
         }
     }
 }

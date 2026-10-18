@@ -70,6 +70,16 @@ fn sanitize_settings_for_available_bundles(settings: &mut Settings, player: &Pla
         if !player.bundle_has_sounds(&rule.bundle) {
             rule.bundle = fallback.clone();
         }
+        if !rule.connect_bundle.trim().is_empty()
+            && !player.bundle_has_sounds(&rule.connect_bundle)
+        {
+            rule.connect_bundle = String::new();
+        }
+        if !rule.disconnect_bundle.trim().is_empty()
+            && !player.bundle_has_sounds(&rule.disconnect_bundle)
+        {
+            rule.disconnect_bundle = String::new();
+        }
     }
 
     if settings.enabled && settings.bundle.is_empty() {
@@ -140,6 +150,16 @@ fn test_sound(state: tauri::State<'_, AppState>, volume: f32, bundle: String) {
 }
 
 #[tauri::command]
+fn set_hide_support_prompt(
+    state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) {
+    let mut s = state.settings.lock().unwrap_or_else(|e| e.into_inner());
+    s.hide_support_prompt = true;
+    s.save(&app_handle);
+}
+
+#[tauri::command]
 fn get_detector_capabilities() -> DetectorCapabilities {
     DetectorCapabilities {
         accelerometer_available: accelerometer_available(),
@@ -197,6 +217,12 @@ fn delete_bundle(
     for rule in settings.port_rules.iter_mut() {
         if rule.bundle == name {
             rule.bundle = fallback.clone();
+        }
+        if rule.connect_bundle == name {
+            rule.connect_bundle = String::new();
+        }
+        if rule.disconnect_bundle == name {
+            rule.disconnect_bundle = String::new();
         }
     }
     settings.validate();
@@ -256,6 +282,45 @@ fn remove_sound(
     state.player.remove_sound(&bundle, &filename)
 }
 
+// ── Built-in sounds ─────────────────────────────────────────────
+// Starter pack embedded at compile time and seeded into the app data
+// sounds dir on first launch. Only missing files are copied, so user
+// additions, deletions, and renames are never overwritten.
+const BUILT_IN_BUNDLE: &str = "starter";
+
+const BUILT_IN_SOUNDS: &[(&str, &[u8])] = &[
+    (
+        "muhehehe.mp3",
+        include_bytes!("../bundled-sounds/starter/muhehehe.mp3"),
+    ),
+    (
+        "jump-klaww.mp3",
+        include_bytes!("../bundled-sounds/starter/jump-klaww.mp3"),
+    ),
+    (
+        "chicken-on-tree-screaming.mp3",
+        include_bytes!("../bundled-sounds/starter/chicken-on-tree-screaming.mp3"),
+    ),
+];
+
+fn seed_built_in_sounds(sounds_dir: &std::path::Path) {
+    let bundle_dir = sounds_dir.join(BUILT_IN_BUNDLE);
+    // If the folder is gone the user deleted the bundle on purpose: never
+    // recreate it behind their back.
+    if bundle_dir.exists() {
+        return;
+    }
+    if std::fs::create_dir_all(&bundle_dir).is_err() {
+        return;
+    }
+    for (filename, bytes) in BUILT_IN_SOUNDS {
+        let dest = bundle_dir.join(filename);
+        if !dest.exists() {
+            std::fs::write(&dest, bytes).ok();
+        }
+    }
+}
+
 // ── App Setup ───────────────────────────────────────────────────────
 
 fn main() {
@@ -281,7 +346,15 @@ fn main() {
                 .expect("failed to get app data dir")
                 .join("sounds");
 
-            let player = Arc::new(PlayerHandle::new(sounds_dir));
+            seed_built_in_sounds(&sounds_dir);
+            // Shared mic-stand-down window: the player arms it on every
+            // playback so speaker output can't re-trigger detection.
+            let playback_suppress_until =
+                Arc::new(Mutex::new(Instant::now()));
+            let player = Arc::new(PlayerHandle::new(
+                sounds_dir,
+                playback_suppress_until.clone(),
+            ));
             let mut settings = settings;
             settings.validate();
             sanitize_settings_for_available_bundles(&mut settings, &player);
@@ -290,10 +363,13 @@ fn main() {
 
             let player_ref = player.clone();
             let settings_ref = shared_settings.clone();
-            let detector = DetectorHandle::spawn(move |intensity| {
-                let s = settings_ref.lock().unwrap_or_else(|e| e.into_inner());
-                player_ref.play(&s.bundle, s.volume, intensity);
-            });
+            let detector = DetectorHandle::spawn(
+                move |intensity| {
+                    let s = settings_ref.lock().unwrap_or_else(|e| e.into_inner());
+                    player_ref.play(&s.bundle, s.volume, intensity);
+                },
+                playback_suppress_until.clone(),
+            );
 
             let player_ref = player.clone();
             let settings_ref = shared_settings.clone();
@@ -306,8 +382,9 @@ fn main() {
                     } else {
                         rule.on_disconnect
                     };
+                    let bundle = rule.bundle_for(connected).to_string();
 
-                    if should_fire && !rule.bundle.is_empty() {
+                    if should_fire && !bundle.is_empty() {
                         // Port events have a cooldown to prevent rapid-fire triggers
                         // from device negotiation or charger state toggling.
                         let mut lt = last_port_trigger.lock().unwrap_or_else(|e| e.into_inner());
@@ -316,7 +393,7 @@ fn main() {
                         if elapsed >= port_cooldown {
                             *lt = Instant::now();
                             drop(lt);
-                            player_ref.play(&rule.bundle, s.volume, 0.9);
+                            player_ref.play(&bundle, s.volume, 1.0);
                         }
                     }
                 }
@@ -357,7 +434,13 @@ fn main() {
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .tooltip("The Moaning Guy")
-                .icon(app.default_window_icon().unwrap().clone())
+                // expect() with a message instead of unwrap() so a missing tray icon
+                // fails with a clear hint instead of a bare panic at startup.
+                .icon(app.default_window_icon().cloned().unwrap_or_else(|| {
+                // Fall back to an empty image so a missing tray icon degrades
+                // gracefully instead of panicking at startup.
+                tauri::image::Image::new_owned(Vec::new(), 0, 0)
+            }))
                 .on_tray_icon_event(|tray, event| {
                     if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
                         show_settings_window(&tray.app_handle());
@@ -395,7 +478,7 @@ fn main() {
                     "test" => {
                         let state: tauri::State<'_, AppState> = app.state();
                         let s = state.settings.lock().unwrap_or_else(|e| e.into_inner());
-                        state.player.play(&s.bundle, s.volume, 0.8);
+                        state.player.play(&s.bundle, s.volume, 1.0);
                     }
                     "quit" => {
                         app.exit(0);
@@ -412,6 +495,7 @@ fn main() {
             get_port_capabilities,
             get_runtime_diagnostics,
             save_settings,
+            set_hide_support_prompt,
             toggle_enabled,
             test_sound,
             list_bundles,
