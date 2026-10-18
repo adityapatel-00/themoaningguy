@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and release under (e.g. v0.2.0)'
+        required: false
+        default: 'v0.2.0'
 
 permissions:
   contents: write
@@ -56,13 +62,17 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Create tag for manual runs
+        if: github.event_name == 'workflow_dispatch'
+        run: git tag -f "${{ inputs.tag || 'v0.1.0-manual' }}"
+
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'themoaningguy ${{ github.ref_name }}'
+          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: 'themoaningguy ${{ github.event.inputs.tag || github.ref_name }}'
           releaseBody: |
             ## What's New
 
