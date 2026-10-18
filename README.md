@@ -151,7 +151,7 @@ This software is provided "as is", without warranty of any kind. The author is n
 
 ## Adding Sounds
 
-The app ships without sounds. You bring your own:
+The app ships with a built-in `starter` bundle. To add your own:
 
 1. Open Settings -> create a bundle (for example, `anime` or `dramatic`)
 2. Click **+ Add Sound Files** inside the bundle

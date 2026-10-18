@@ -5,26 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Moaning Guy - Settings</title>
   <style>
+    /* ── Design tokens (typography-only, no logic change) ── */
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+      --text-xs: 12px;
+      --text-sm: 13px;
+      --text-base: 14px;
+      --text-lg: 20px;
+      --leading-tight: 1.25;
+      --leading-normal: 1.5;
+      --leading-relaxed: 1.6;
+      --tracking-tight: -0.015em;
+      --tracking-wide: 0.08em;
+      --tracking-mega: 0.12em;
+      --muted-strong: #b6b6be;
+      --muted: #9c9ca4;
+      --muted-faint: #707078;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f0f1a;
+      font-family: var(--font-sans);
+      background: #000000;
       color: #e0e0e0;
-      padding: 24px 24px 168px;
+      padding: 24px 24px 132px;
       user-select: none;
       overflow-y: auto;
+      font-size: var(--text-base);
+      line-height: var(--leading-normal);
+      letter-spacing: var(--tracking-tight);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: "cv11", "ss01";
     }
 
-    .header { text-align: center; margin-bottom: 28px; }
+    .header { text-align: center; margin-bottom: 28px; text-wrap: balance; }
     .header .logo { width: 120px; height: 120px; margin-bottom: 8px; object-fit: contain; }
-    .header h1 { font-size: 20px; font-weight: 700; color: #fff; }
-    .header p { font-size: 12px; color: #888; margin-top: 4px; }
+    .header h1 {
+      font-size: 24px;
+      line-height: var(--leading-tight);
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .header p {
+      font-size: var(--text-xs);
+      line-height: var(--leading-normal);
+      letter-spacing: var(--tracking-wide);
+      color: var(--muted);
+      margin-top: 6px;
+    }
 
     .section { margin-bottom: 22px; }
     .section-title {
-      font-size: 11px; text-transform: uppercase;
-      letter-spacing: 1.5px; color: #666; margin-bottom: 12px;
+      font-size: var(--text-xs); text-transform: uppercase;
+      letter-spacing: var(--tracking-mega); color: var(--muted);
+      font-weight: 600; line-height: 1.4;
+      margin-bottom: 12px;
       display: flex; align-items: center; justify-content: space-between;
     }
 
@@ -38,14 +77,14 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      background: #1a1a2e;
-      border: 1px solid #2a2a40;
+      background: #121215;
+      border: 1px solid #26262c;
       border-radius: 12px;
       padding: 14px;
       cursor: pointer;
       transition: border-color 0.2s, transform 0.2s, background 0.2s;
     }
-    .mode-option:hover { background: #202038; transform: translateY(-1px); }
+    .mode-option:hover { background: #1b1b1f; transform: translateY(-1px); }
     .mode-option input {
       position: absolute;
       inset: 0;
@@ -57,40 +96,27 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      font-size: 14px;
+      font-size: var(--text-base);
+      line-height: var(--leading-tight);
       font-weight: 700;
+      letter-spacing: var(--tracking-tight);
       color: #fff;
     }
     .mode-option .mode-desc {
-      font-size: 12px;
-      line-height: 1.4;
-      color: #8b8ba8;
-    }
-    .mode-option .mode-pill {
-      align-self: flex-start;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      background: #292948;
-      color: #a7a7d9;
+      font-size: var(--text-sm);
+      line-height: var(--leading-relaxed);
+      color: var(--muted-strong);
     }
     .mode-option.active {
-      border-color: #7c4dff;
-      background: #1e1e3a;
-      box-shadow: 0 0 0 1px #7c4dff44 inset;
+      border-color: #ff4fa3;
+      background: #181114;
+      box-shadow: 0 0 0 1px #ff4fa344 inset;
     }
     .mode-option.disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-    .mode-option.disabled:hover { transform: none; background: #1a1a2e; }
-    .mode-status {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #7c4dff;
-    }
+    .mode-option.disabled:hover { transform: none; background: #121215; }
 
     .port-rules {
       display: flex;
@@ -98,8 +124,8 @@
       gap: 10px;
     }
     .port-rule {
-      background: #1a1a2e;
-      border: 1px solid #2a2a40;
+      background: #121215;
+      border: 1px solid #26262c;
       border-radius: 12px;
       padding: 14px;
       display: flex;
@@ -118,8 +144,8 @@
       flex-direction: column;
       gap: 4px;
     }
-    .port-rule-title h4 { font-size: 14px; color: #fff; }
-    .port-rule-title p { font-size: 12px; color: #7e7e98; line-height: 1.4; }
+    .port-rule-title h4 { font-size: var(--text-base); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); color: #fff; }
+    .port-rule-title p { font-size: var(--text-sm); color: var(--muted-strong); line-height: var(--leading-relaxed); }
     .port-badges {
       display: flex;
       gap: 6px;
@@ -130,16 +156,21 @@
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #292948;
-      color: #a7a7d9;
+      padding: 0;
+      border-radius: 0;
+      background: none;
+      color: #c7c7d1;
     }
-    .port-badge.live { background: #123321; color: #7fe29c; }
-    .port-badge.off { background: #3b2020; color: #ff9c9c; }
-    .port-badge.warn { background: #3b3220; color: #ffd58c; }
-    .port-badge.available { background: #123321; color: #7fe29c; }
-    .port-badge.unavailable { background: #3b2020; color: #ff9c9c; }
+    .port-badge.live { background: none; color: #ffffff; }
+    .port-badge.off { background: none; color: #ffffff; }
+    .port-badge.warn { background: none; color: #ffffff; }
+    .port-badge.available { background: none; color: #ffffff; }
+    .port-badge.unavailable {
+      background: none;
+      color: var(--muted-faint);
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
+    }
     .diagnostics {
       display: flex;
       flex-direction: column;
@@ -147,8 +178,8 @@
       margin-top: 12px;
       padding: 14px;
       border-radius: 12px;
-      background: #141423;
-      border: 1px solid #2a2a40;
+      background: #0b0b0e;
+      border: 1px solid #26262c;
     }
     .diagnostics-header {
       display: flex;
@@ -157,8 +188,8 @@
       gap: 10px;
     }
     .diagnostics-header button {
-      border: 1px solid #2a2a40;
-      background: #1a1a2e;
+      border: 1px solid #26262c;
+      background: #121215;
       color: #ddd;
       border-radius: 999px;
       padding: 7px 11px;
@@ -166,7 +197,7 @@
       cursor: pointer;
     }
     .diagnostics-header button:hover {
-      border-color: #7c4dff;
+      border-color: #ff4fa3;
       color: #fff;
     }
     .diagnostics-body {
@@ -192,7 +223,7 @@
     .diagnostics-toggle .chevron {
       display: inline-block;
       transition: transform 0.18s ease;
-      color: #7c4dff;
+      color: #ff4fa3;
     }
     .diagnostics.expanded .diagnostics-toggle .chevron {
       transform: rotate(90deg);
@@ -201,26 +232,35 @@
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
+      align-items: start;
     }
     .diagnostics-item {
-      background: #1a1a2e;
-      border: 1px solid #2a2a40;
+      background: #121215;
+      border: 1px solid #26262c;
       border-radius: 10px;
       padding: 12px;
       display: flex;
       flex-direction: column;
       gap: 6px;
+      height: 100%;
     }
     .diagnostics-item label {
       font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #6f6f8e;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .diagnostics-item span {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--text-sm);
+      font-weight: 650;
+      letter-spacing: var(--tracking-tight);
+      line-height: 1.35;
       color: #fff;
+      text-wrap: pretty;
     }
     .diagnostics-chips {
       display: flex;
@@ -233,66 +273,66 @@
       gap: 6px;
       padding: 7px 10px;
       border-radius: 999px;
-      border: 1px solid #2a2a40;
-      background: rgba(26, 26, 46, 0.92);
+      border: 1px solid #26262c;
+      background: rgba(20, 20, 24, 0.92);
       font-size: 11px;
       color: #ddd;
     }
-    .diagnostic-chip.ok { border-color: #245c3b; color: #8ef0b1; }
-    .diagnostic-chip.warn { border-color: #66501f; color: #ffd58c; }
-    .diagnostic-chip.off { border-color: #6a2b2b; color: #ff9c9c; }
+    .diagnostic-chip.ok { border-color: #26262c; color: #ffffff; }
+    .diagnostic-chip.warn { border-color: #26262c; color: #ffffff; }
+    .diagnostic-chip.off { border-color: #26262c; color: #ffffff; }
     .port-rule-grid {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 10px;
-    }
-    .port-field {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
-    .port-field label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #6f6f8e;
-    }
-    .port-field select {
-      background: #0f0f1a;
-      border: 1px solid #333;
-      border-radius: 8px;
-      color: #e0e0e0;
+    .port-trigger-row {
+      display: grid;
+      grid-template-columns: 104px 1fr;
+      align-items: center;
+      gap: 12px;
+      background: #0e0e12;
+      border: 1px solid #232328;
+      border-radius: 10px;
       padding: 10px 12px;
-      font-size: 13px;
-      outline: none;
     }
-    .port-field select:focus { border-color: #7c4dff; }
-    .port-field select option { background: #0f0f1a; color: #e0e0e0; }
-    .port-checks {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+    .port-trigger-row.is-off {
+      opacity: 0.45;
     }
-    .port-check {
+    .port-trigger-name {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: #131320;
-      border: 1px solid #27273e;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 12px;
-      color: #e0e0e0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-mega);
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
     }
-    .port-check input { accent-color: #7c4dff; }
+    .port-trigger-row select {
+      width: 100%;
+      background: #000000;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      padding: 9px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+    .port-trigger-row select:focus { border-color: #ff4fa3; }
+    .port-trigger-row select option { background: #000000; color: #e0e0e0; }
+    .port-trigger-row input[type="checkbox"] { accent-color: #ff4fa3; margin: 0; }
 
     /* ── Toggle ──────────────────────────────────── */
     .toggle-row {
       display: flex; align-items: center; justify-content: space-between;
-      background: #1a1a2e; padding: 14px 16px;
+      background: #121215; padding: 14px 16px;
       border-radius: 10px; margin-bottom: 12px;
     }
-    .toggle-row label { font-size: 14px; }
+    .toggle-row label { font-size: var(--text-base); font-weight: 600; letter-spacing: var(--tracking-tight); }
     .toggle { position: relative; width: 44px; height: 24px; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle .slider {
@@ -304,20 +344,21 @@
       left: 3px; top: 3px; background: #fff; border-radius: 50%;
       transition: transform 0.2s;
     }
-    .toggle input:checked + .slider { background: #7c4dff; }
+    .toggle input:checked + .slider { background: #ff4fa3; }
     .toggle input:checked + .slider::before { transform: translateX(20px); }
 
     /* ── Sliders ─────────────────────────────────── */
     .slider-group {
-      background: #1a1a2e; padding: 16px;
+      background: #121215; padding: 16px;
       border-radius: 10px; margin-bottom: 12px;
     }
-    .slider-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-    .slider-header label { font-size: 14px; }
-    .slider-header .value { font-size: 13px; color: #7c4dff; font-weight: 600; }
+    .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+    .slider-header label { font-size: var(--text-base); font-weight: 600; letter-spacing: var(--tracking-tight); }
+    .slider-header .value { font-size: var(--text-sm); color: #ff4fa3; font-weight: 650; font-variant-numeric: tabular-nums; }
     .slider-hints {
       display: flex; justify-content: space-between;
-      font-size: 10px; color: #555; margin-top: 6px;
+      font-size: 11px; line-height: 1.4; letter-spacing: 0.02em;
+      color: var(--muted-faint); margin-top: 6px;
     }
     input[type="range"] {
       -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
@@ -325,7 +366,7 @@
     }
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none; appearance: none; width: 18px; height: 18px;
-      background: #7c4dff; border-radius: 50%; cursor: pointer;
+      background: #ff4fa3; border-radius: 50%; cursor: pointer;
     }
 
     /* ── Bundles ──────────────────────────────────── */
@@ -333,70 +374,71 @@
 
     .bundle-item {
       display: flex; align-items: center; justify-content: space-between;
-      background: #1a1a2e; padding: 12px 14px; border-radius: 10px;
+      background: #121215; padding: 12px 14px; border-radius: 10px;
       cursor: pointer; border: 2px solid transparent; transition: all 0.2s;
     }
-    .bundle-item:hover { background: #222240; }
-    .bundle-item.active { border-color: #7c4dff; background: #1e1e3a; }
+    .bundle-item:hover { background: #1a1a1f; }
+    .bundle-item.active { border-color: #ff4fa3; background: #181114; }
     .bundle-item.expanded { border-radius: 10px 10px 0 0; }
 
     .bundle-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-    .bundle-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .bundle-count { font-size: 11px; color: #666; flex-shrink: 0; }
+    .bundle-name { font-size: var(--text-base); font-weight: 650; letter-spacing: var(--tracking-tight); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bundle-count { font-size: var(--text-xs); color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 
     .bundle-actions { display: flex; gap: 4px; flex-shrink: 0; }
     .bundle-actions button {
-      background: none; border: none; color: #555; cursor: pointer;
+      background: none; border: none; color: #777; cursor: pointer;
       font-size: 14px; padding: 4px 6px; border-radius: 4px; transition: all 0.15s;
     }
-    .bundle-actions button:hover { background: #2a2a40; color: #e0e0e0; }
+    .bundle-actions button:hover { background: #26262c; color: #e0e0e0; }
     .bundle-actions .delete-btn:hover { background: #3a1a1a; color: #ef5350; }
 
     /* ── Sounds Panel (expandable under bundle) ──── */
     .sounds-panel {
-      background: #151528; border: 2px solid #7c4dff;
-      border-top: 1px solid #2a2a40;
+      background: #0e0e12; border: 2px solid #ff4fa3;
+      border-top: 1px solid #26262c;
       border-radius: 0 0 10px 10px; padding: 10px;
       margin-top: -2px; margin-bottom: 4px;
     }
 
     .sound-item {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 10px; border-radius: 6px; font-size: 13px;
+      padding: 7px 10px; border-radius: 6px; font-size: var(--text-sm);
+      line-height: var(--leading-normal);
       transition: background 0.15s;
     }
-    .sound-item:hover { background: #1a1a30; }
+    .sound-item:hover { background: #17171c; }
     .sound-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sound-remove {
-      background: none; border: none; color: #555; cursor: pointer;
+      background: none; border: none; color: #777; cursor: pointer;
       font-size: 15px; padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
     }
     .sound-remove:hover { background: #3a1a1a; color: #ef5350; }
 
-    .sounds-empty { text-align: center; padding: 14px; color: #444; font-size: 12px; }
+    .sounds-empty { text-align: center; padding: 14px; color: #6e6e77; font-size: 12px; }
 
     .add-sounds-btn {
       width: 100%; padding: 8px; margin-top: 6px;
-      border: 2px dashed #2a2a40; border-radius: 8px;
-      background: transparent; color: #666; font-size: 12px;
+      border: 2px dashed #26262c; border-radius: 8px;
+      background: transparent; color: #8a8a92; font-size: 12px;
       cursor: pointer; transition: all 0.2s;
     }
-    .add-sounds-btn:hover { border-color: #7c4dff; color: #7c4dff; }
+    .add-sounds-btn:hover { border-color: #ff4fa3; color: #ff4fa3; }
 
     /* ── Create Bundle ───────────────────────────── */
     .create-bundle-row {
       display: flex; gap: 8px; margin-top: 10px;
     }
     .create-bundle-row input {
-      flex: 1; padding: 10px 12px; background: #1a1a2e;
+      flex: 1; padding: 10px 12px; background: #121215;
       border: 1px solid #333; border-radius: 8px;
       color: #e0e0e0; font-size: 13px; outline: none;
     }
-    .create-bundle-row input:focus { border-color: #7c4dff; }
-    .create-bundle-row input::placeholder { color: #444; }
+    .create-bundle-row input:focus { border-color: #ff4fa3; }
+    .create-bundle-row input::placeholder { color: #6e6e77; }
 
     .btn-create {
-      padding: 10px 16px; background: #7c4dff; color: #fff;
+      padding: 10px 16px; background: #ff4fa3; color: #ffffff;
       border: none; border-radius: 8px; font-size: 13px;
       font-weight: 600; cursor: pointer; transition: opacity 0.2s;
       white-space: nowrap;
@@ -417,14 +459,33 @@
     .button-row .btn {
       box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
     }
+    /* Blur shield under the fixed Test/Save bar — content
+       scrolling beneath melts into blur instead of hard-cutting. */
+    body::after {
+      content: "";
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 170px;
+      background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.82) 48%, #000000 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      mask-image: linear-gradient(180deg, transparent 0%, black 55%);
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 55%);
+      z-index: 54;
+      pointer-events: none;
+    }
     .btn {
       flex: 1; padding: 12px; border: none; border-radius: 10px;
-      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      font-size: var(--text-base); font-weight: 650; letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-tight);
+      cursor: pointer; transition: all 0.2s;
     }
-    .btn-primary { background: linear-gradient(135deg, #5c6bc0, #7c4dff); color: #fff; }
+    .btn-primary { background: #ff4fa3; color: #ffffff; }
     .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-test { background: #2a1a2e; color: #e0a0ff; border: 1px solid #7c4dff44; }
-    .btn-test:hover { background: #3a2a3e; }
+    .btn-test { background: transparent; color: #ff4fa3; border: 1px solid #ff4fa344; }
+    .btn-test:hover { background: #121215; }
 
     /* ── Toast ────────────────────────────────────── */
     .toast {
@@ -439,28 +500,28 @@
     /* ── Rename Dialog ───────────────────────────── */
     .modal-overlay {
       display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); z-index: 50;
+      background: rgba(0,0,0,0.6); z-index: 70;
       justify-content: center; align-items: center;
     }
     .modal-overlay.show { display: flex; }
     .modal {
-      background: #1a1a2e; padding: 24px; border-radius: 12px;
+      background: #121215; padding: 24px; border-radius: 12px;
       width: 320px; border: 1px solid #333;
     }
     .modal h3 { font-size: 16px; margin-bottom: 14px; color: #fff; }
     .modal input {
-      width: 100%; padding: 10px 12px; background: #0f0f1a;
+      width: 100%; padding: 10px 12px; background: #000000;
       border: 1px solid #333; border-radius: 8px;
       color: #e0e0e0; font-size: 14px; outline: none; margin-bottom: 14px;
     }
-    .modal input:focus { border-color: #7c4dff; }
+    .modal input:focus { border-color: #ff4fa3; }
     .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
     .modal-actions button {
       padding: 8px 16px; border: none; border-radius: 6px;
       font-size: 13px; cursor: pointer;
     }
     .modal-cancel { background: #333; color: #e0e0e0; }
-    .modal-confirm { background: #7c4dff; color: #fff; }
+    .modal-confirm { background: #ff4fa3; color: #fff; }
 
     .support-overlay {
       display: none;
@@ -475,8 +536,8 @@
     .support-overlay.show { display: flex; }
     .support-card {
       width: min(420px, 100%);
-      background: linear-gradient(180deg, #20203a 0%, #141423 100%);
-      border: 1px solid #35355a;
+      background: linear-gradient(180deg, #17171a 0%, #0b0b0e 100%);
+      border: 1px solid #2b2b31;
       border-radius: 18px;
       padding: 20px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
@@ -487,21 +548,24 @@
       gap: 6px;
       padding: 5px 10px;
       border-radius: 999px;
-      background: #2a1a2e;
-      color: #f3c7ff;
+      background: #211016;
+      color: #ff4fa3;
       font-size: 11px;
       margin-bottom: 12px;
     }
     .support-card h3 {
       font-size: 20px;
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
       color: #fff;
       margin-bottom: 10px;
     }
     .support-card p {
-      font-size: 13px;
-      line-height: 1.6;
-      color: #c9c9df;
+      font-size: var(--text-sm);
+      line-height: var(--leading-relaxed);
+      color: #c2c2cb;
       margin-bottom: 16px;
+      text-wrap: pretty;
     }
     .support-actions {
       display: flex;
@@ -521,10 +585,10 @@
       transition: transform 0.18s, opacity 0.18s;
     }
     .support-actions button:hover { transform: translateY(-1px); opacity: 0.95; }
-    .support-primary { background: linear-gradient(135deg, #7c4dff, #5c6bc0); color: #fff; }
-    .support-secondary { background: #26263b; color: #e0e0f0; }
+    .support-primary { background: #ff4fa3; color: #ffffff; }
+    .support-secondary { background: #1c1c20; color: #e0e0f0; }
     .support-upi-btn { background: #1f3428; color: #bdf5cc; }
-    .support-tertiary { background: #1f2b34; color: #b8e7ff; }
+    .support-tertiary { background: #15181c; color: #b8e7ff; }
     .upi-modal-card {
       max-width: 360px;
       text-align: center;
@@ -544,18 +608,18 @@
       border-radius: 16px;
       background: #fff;
       padding: 10px;
-      border: 1px solid #2a2a40;
+      border: 1px solid #26262c;
       margin-bottom: 14px;
     }
     .upi-id-box {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 10px;
       padding: 10px 12px;
       border-radius: 12px;
-      border: 1px solid #2a2a40;
-      background: rgba(26, 26, 46, 0.92);
+      border: 1px solid #26262c;
+      background: rgba(20, 20, 24, 0.92);
       margin-bottom: 14px;
       text-align: left;
     }
@@ -581,7 +645,7 @@
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      color: #9a9ab8;
+      color: #8e8e96;
       margin-bottom: 2px;
     }
     .support-footer {
@@ -590,42 +654,51 @@
       right: 24px;
       bottom: 18px;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
-      gap: 12px;
-      z-index: 20;
+      gap: 8px;
+      z-index: 58;
       pointer-events: none;
     }
-    .support-footer .hint {
-      font-size: 11px;
-      color: #666;
-      background: rgba(26, 26, 46, 0.92);
-      border: 1px solid #2a2a40;
-      border-radius: 999px;
-      padding: 8px 12px;
-      pointer-events: auto;
-    }
+
     .support-links {
       display: flex;
       gap: 8px;
+      width: 100%;
       pointer-events: auto;
+    }
+    .support-link-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 13px;
+      height: 13px;
+      font-size: 13px;
+      line-height: 1;
+      flex-shrink: 0;
     }
     .support-link {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid #2a2a40;
-      background: rgba(26, 26, 46, 0.92);
-      color: #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: 2px;
+      border: 1px solid #ff4fa3;
+      background: transparent;
+      color: #ffffff;
       font-size: 11px;
       text-decoration: none;
       transition: border-color 0.18s, color 0.18s, transform 0.18s;
     }
     .support-link:hover {
       transform: translateY(-1px);
-      border-color: #7c4dff;
+      border-color: #ffffff;
       color: #fff;
     }
 
@@ -633,7 +706,20 @@
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #555; }
+    ::-webkit-scrollbar-thumb:hover { background: #777; }
+
+    /* ── Typography a11y (visual only) ──────────── */
+    :focus-visible {
+      outline: 2px solid #ff4fa3;
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -662,17 +748,14 @@
       <label class="mode-option active" data-mode="accelerometer">
         <input type="radio" name="detectionMode" value="accelerometer" id="modeAccelerometer" />
         <span class="mode-label">Accelerometer</span>
-        <span class="mode-pill">Precise</span>
-        <span class="mode-desc">Uses supported motion sensors for fast, sharp slap detection.</span>
+        <span class="mode-desc">Slap or shake your device.</span>
       </label>
       <label class="mode-option" data-mode="microphone">
         <input type="radio" name="detectionMode" value="microphone" id="modeMicrophone" />
         <span class="mode-label">Microphone</span>
-        <span class="mode-pill">Fallback</span>
-        <span class="mode-desc">Listens to mic spikes for devices without a sensor hub.</span>
+        <span class="mode-desc">Listens to mic spikes without a sensor.</span>
       </label>
     </div>
-    <div class="mode-status" id="modeStatus">Checking sensor support...</div>
   </div>
 
   <!-- Detection -->
@@ -696,37 +779,24 @@
       </div>
       <input type="range" id="cooldown" min="200" max="10000" step="100" value="2000" />
       <div class="slider-hints">
-        <span>Rapid-fire</span>
-        <span>Dramatic pauses</span>
+        <span>Fast</span>
+        <span>Slow</span>
       </div>
     </div>
   </div>
 
-  <!-- Volume -->
-  <div class="section">
-    <div class="section-title">Playback</div>
-    <div class="slider-group">
-      <div class="slider-header">
-        <label>Volume</label>
-        <span class="value" id="volumeValue">80%</span>
-      </div>
-      <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8" />
-      <div class="slider-hints">
-        <span>Whisper</span>
-        <span>Full send</span>
-      </div>
-    </div>
-  </div>
+  <!-- Volume is not user-adjustable in the UI; hidden input keeps saved settings intact -->
+  <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8" style="display:none" />
+  <span id="volumeValue" style="display:none">80%</span>
 
   <!-- Sound Bundles -->
   <div class="section">
     <div class="section-title">
       <span>Sound Bundles</span>
-      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">click to expand</span>
     </div>
     <div class="bundle-list" id="bundleList"></div>
     <div class="create-bundle-row">
-      <input type="text" id="newBundleName" placeholder="New bundle name..." />
+      <input type="text" id="newBundleName" placeholder="Add new effect" />
       <button class="btn-create" id="createBundleBtn">Create</button>
     </div>
   </div>
@@ -735,7 +805,6 @@
   <div class="section">
     <div class="section-title">
       <span>Diagnostics</span>
-      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">collapsed by default</span>
     </div>
     <div class="diagnostics" id="diagnosticsPanel">
       <div class="diagnostics-header">
@@ -769,7 +838,6 @@
   <div class="section">
     <div class="section-title">
       <span>Port Detection</span>
-      <span style="font-size:10px; color:#555; text-transform:none; letter-spacing:0">best effort by OS</span>
     </div>
     <div class="port-rules" id="portRulesList"></div>
   </div>
@@ -819,12 +887,11 @@
   </div>
 
   <div class="support-footer">
-    <div class="hint">A tiny clap for the chaos engine</div>
     <div class="support-links">
-      <a href="https://github.com/sponsors/adityapatel-00" class="support-link" data-external="https://github.com/sponsors/adityapatel-00">Sponsor</a>
-      <a href="https://ko-fi.com/adityapatel_00" class="support-link" data-external="https://ko-fi.com/adityapatel_00">Ko-fi</a>
-      <a href="#" class="support-link" id="supportUpiLink">UPI</a>
-      <a href="https://github.com/AdiYd/themoaningguy" class="support-link" data-external="https://github.com/AdiYd/themoaningguy">Star repo</a>
+      <a href="https://github.com/sponsors/adityapatel-00" class="support-link" data-external="https://github.com/sponsors/adityapatel-00"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 .2a7.8 7.8 0 0 0-2.47 15.2c.39.07.53-.17.53-.38v-1.34c-2.16.47-2.61-1.06-2.61-1.06-.35-.9-.85-1.14-.85-1.14-.7-.49.05-.48.05-.48.77.05 1.18.79 1.18.79.68 1.17 1.79.83 2.22.63.07-.49.27-.83.49-1.02-1.73-.2-3.55-.86-3.55-3.82 0-.84.3-1.53.79-2.07-.08-.2-.35-1 .08-2.08 0 0 .65-.21 2.13.79a7.4 7.4 0 0 1 3.88 0c1.48-1 2.13-.79 2.13-.79.43 1.08.16 1.88.08 2.08.49.54.79 1.23.79 2.07 0 2.97-1.83 3.61-3.57 3.81.28.25.53.74.53 1.49v2.21c0 .21.14.46.54.38A7.8 7.8 0 0 0 8 .2Z"/></svg><span>Sponsor</span></a>
+      <a href="https://ko-fi.com/adityapatel_00" class="support-link" data-external="https://ko-fi.com/adityapatel_00"><svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg><span>Ko-fi</span></a>
+      <a href="#" class="support-link" id="supportUpiLink"><span class="support-link-icon">₹</span><span>UPI</span></a>
+      <a href="https://github.com/adityapatel-00/themoaningguy" class="support-link" data-external="https://github.com/adityapatel-00/themoaningguy"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 .2a7.8 7.8 0 0 0-2.47 15.2c.39.07.53-.17.53-.38v-1.34c-2.16.47-2.61-1.06-2.61-1.06-.35-.9-.85-1.14-.85-1.14-.7-.49.05-.48.05-.48.77.05 1.18.79 1.18.79.68 1.17 1.79.83 2.22.63.07-.49.27-.83.49-1.02-1.73-.2-3.55-.86-3.55-3.82 0-.84.3-1.53.79-2.07-.08-.2-.35-1 .08-2.08 0 0 .65-.21 2.13.79a7.4 7.4 0 0 1 3.88 0c1.48-1 2.13-.79 2.13-.79.43 1.08.16 1.88.08 2.08.49.54.79 1.23.79 2.07 0 2.97-1.83 3.61-3.57 3.81.28.25.53.74.53 1.49v2.21c0 .21.14.46.54.38A7.8 7.8 0 0 0 8 .2Z"/></svg><span>Star repo</span></a>
     </div>
   </div>
 
@@ -852,7 +919,6 @@
     // Elements
     const enabledToggle = document.getElementById('enabledToggle');
     const modeGrid = document.getElementById('modeGrid');
-    const modeStatus = document.getElementById('modeStatus');
     const modeAccelerometer = document.getElementById('modeAccelerometer');
     const modeMicrophone = document.getElementById('modeMicrophone');
     const sensitivitySlider = document.getElementById('sensitivity');
@@ -958,12 +1024,6 @@
 
       accelOption.classList.toggle('disabled', !accelerometerSupported);
 
-      if (accelerometerSupported) {
-        modeStatus.textContent = 'Accelerometer detected on this device.';
-      } else {
-        modeStatus.textContent = 'No sensor detected. Microphone mode works great for slap detection.';
-      }
-
       if (!accelerometerSupported && selectedMode === 'accelerometer') {
         selectedMode = 'microphone';
         renderModeSelection();
@@ -993,18 +1053,13 @@
 
     async function persistSupportPreference() {
       if (!supportNeverShow.checked) return;
-      await invoke('save_settings', {
-        newSettings: {
-          sensitivity: thresholdFromSlider(sensitivitySlider.value),
-          cooldownMs: parseInt(cooldownSlider.value),
-          volume: parseFloat(volumeSlider.value),
-          enabled: enabledToggle.checked,
-          detectionMode: selectedMode,
-          bundle: selectedBundle,
-          portRules,
-          hideSupportPrompt: true,
-        },
-      });
+      try {
+        // Dedicated command: must not re-save the whole settings object,
+        // which would discard edits the user has not pressed Save for yet.
+        await invoke('set_hide_support_prompt');
+      } catch (e) {
+        // fall through to local hide only
+      }
       setSupportPromptHidden(true);
     }
 
@@ -1021,17 +1076,31 @@
       portRules = PORT_KIND_ORDER.map(kind => byKind.get(kind) || {
         kind,
         bundle: availableBundles[0] || '',
+        connectBundle: '',
+        disconnectBundle: '',
         onConnect: false,
         onDisconnect: false,
       });
 
-      if (availableBundles.length > 0) {
-        portRules.forEach((rule) => {
+      portRules.forEach((rule) => {
+        // Older settings only have the shared `bundle` field.
+        if (rule.connectBundle === undefined) rule.connectBundle = '';
+        if (rule.disconnectBundle === undefined) rule.disconnectBundle = '';
+
+        if (availableBundles.length > 0) {
           if (!availableBundles.includes(rule.bundle)) {
             rule.bundle = availableBundles[0];
           }
-        });
-      }
+          // Drop per-trigger picks whose bundle no longer exists so they
+          // fall back to the shared bundle instead of playing nothing.
+          if (rule.connectBundle && !availableBundles.includes(rule.connectBundle)) {
+            rule.connectBundle = '';
+          }
+          if (rule.disconnectBundle && !availableBundles.includes(rule.disconnectBundle)) {
+            rule.disconnectBundle = '';
+          }
+        }
+      });
     }
 
     function escapeAttr(str) {
@@ -1051,7 +1120,7 @@
 
     function portStatusMeta(capability) {
       if (!capability.supported) {
-        return { label: 'Unavailable', className: 'unavailable' };
+        return { label: 'Not Available', className: 'unavailable' };
       }
       return { label: 'Available', className: 'available' };
     }
@@ -1073,7 +1142,7 @@
         const status = portStatusMeta(capability);
 
         const card = document.createElement('div');
-        card.className = 'port-rule';
+        card.className = 'port-rule' + (capability.supported ? '' : ' disabled');
         card.innerHTML = `
           <div class="port-rule-top">
             <div class="port-rule-title">
@@ -1084,41 +1153,47 @@
             </div>
           </div>
           <div class="port-rule-grid">
-            <div class="port-field">
-              <label>Audio pack</label>
-              <select data-port-bundle="${rule.kind}">
-                ${bundleOptionsHtml(rule.bundle)}
+            <div class="port-trigger-row ${rule.onConnect ? '' : 'is-off'}">
+              <label class="port-trigger-name">
+                <input type="checkbox" ${rule.onConnect ? 'checked' : ''} data-port-connect="${rule.kind}" />
+                Connect
+              </label>
+              <select data-port-connect-bundle="${rule.kind}">
+                ${bundleOptionsHtml(rule.connectBundle || rule.bundle)}
               </select>
             </div>
-            <div class="port-field">
-              <label>Triggers</label>
-              <div class="port-checks">
-                <label class="port-check">
-                  <input type="checkbox" ${rule.onConnect ? 'checked' : ''} data-port-connect="${rule.kind}" />
-                  Connect
-                </label>
-                <label class="port-check">
-                  <input type="checkbox" ${rule.onDisconnect ? 'checked' : ''} data-port-disconnect="${rule.kind}" />
-                  Removal
-                </label>
-              </div>
+            <div class="port-trigger-row ${rule.onDisconnect ? '' : 'is-off'}">
+              <label class="port-trigger-name">
+                <input type="checkbox" ${rule.onDisconnect ? 'checked' : ''} data-port-disconnect="${rule.kind}" />
+                Removal
+              </label>
+              <select data-port-disconnect-bundle="${rule.kind}">
+                ${bundleOptionsHtml(rule.disconnectBundle || rule.bundle)}
+              </select>
             </div>
           </div>
         `;
 
-        const bundleSelect = card.querySelector(`[data-port-bundle="${rule.kind}"]`);
-        bundleSelect.addEventListener('change', (e) => {
-          rule.bundle = e.target.value;
+        const connectBundleSelect = card.querySelector(`[data-port-connect-bundle="${rule.kind}"]`);
+        connectBundleSelect.addEventListener('change', (e) => {
+          rule.connectBundle = e.target.value;
+        });
+
+        const disconnectBundleSelect = card.querySelector(`[data-port-disconnect-bundle="${rule.kind}"]`);
+        disconnectBundleSelect.addEventListener('change', (e) => {
+          rule.disconnectBundle = e.target.value;
         });
 
         const connectToggle = card.querySelector(`[data-port-connect="${rule.kind}"]`);
         connectToggle.addEventListener('change', (e) => {
           rule.onConnect = e.target.checked;
+          connectToggle.closest('.port-trigger-row').classList.toggle('is-off', !e.target.checked);
         });
 
         const disconnectToggle = card.querySelector(`[data-port-disconnect="${rule.kind}"]`);
         disconnectToggle.addEventListener('change', (e) => {
           rule.onDisconnect = e.target.checked;
+          disconnectToggle.closest('.port-trigger-row').classList.toggle('is-off', !e.target.checked);
         });
 
         portRulesList.appendChild(card);
@@ -1137,15 +1212,12 @@
       diagPortMode.textContent = runtimeDiagnostics.portMonitorMode || '-';
       diagAccelMode.textContent = runtimeDiagnostics.accelerometerAvailable
         ? 'Available'
-        : 'Fallback only';
+        : 'Not Available';
 
       const ports = Array.isArray(runtimeDiagnostics.ports) ? runtimeDiagnostics.ports : [];
       diagPortChips.innerHTML = ports.map((port) => {
         const className = portChipClass(port);
-        const stateText = port.supported
-          ? (port.connected ? 'Detected' : 'Not active')
-          : 'Unavailable';
-        return `<span class="diagnostic-chip ${className}">${port.label}: ${stateText}</span>`;
+        return `<span class="diagnostic-chip ${className}">${port.label}: ${port.supported ? 'Available' : 'Not Available'}</span>`;
       }).join('');
     }
 
@@ -1182,7 +1254,7 @@
     });
     supportStarBtn.addEventListener('click', async () => {
       await persistSupportPreference();
-      await openExternal('https://github.com/AdiYd/themoaningguy');
+      await openExternal('https://github.com/adityapatel-00/themoaningguy');
     });
     supportLaterBtn.addEventListener('click', async () => {
       await persistSupportPreference();
@@ -1461,7 +1533,8 @@
 
     // ── Toast ───────────────────────────────────────
     function showToast(msg) {
-      toast.textContent = msg;
+      const text = typeof msg === 'string' ? msg : (msg && msg.message ? msg.message : String(msg));
+      toast.textContent = text;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
